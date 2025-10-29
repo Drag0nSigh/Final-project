@@ -1,17 +1,15 @@
 from sqlalchemy import Column, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
-from userpermission import UserPermission
-
-
-Base = declarative_base
+from user_service.db.base import Base
 
 
 class User(Base):
-    __tablename__ = "user"
-    id = Column(Integer, primary_key=True)
-    name = Column(String(50))
-    username = Column(String(50), unique=True)
-    user_permission = relationship("UserPermission", backref="user")
+    __tablename__ = "users"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(50), unique=True, nullable=False, index=True)
+    
+    # Связь с правами пользователя
+    permissions = relationship("UserPermission", back_populates="user", cascade="all, delete-orphan")
 
