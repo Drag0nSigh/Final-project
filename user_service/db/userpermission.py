@@ -10,9 +10,9 @@ class UserPermission(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    permission_type = Column(String(20), nullable=False)  # 'access' или 'group'
-    item_id = Column(Integer, nullable=False)  # ID доступа или группы
-    status = Column(String(20), nullable=False, default="pending")  # 'active', 'pending', 'revoked'
+    permission_type = Column(String(20), nullable=False)
+    item_id = Column(Integer, nullable=False)
+    status = Column(String(20), nullable=False, default="pending")
     request_id = Column(String(36), nullable=False, unique=True, index=True)  # UUID для трекинга
     assigned_at = Column(DateTime, default=datetime.utcnow, nullable=True)
     

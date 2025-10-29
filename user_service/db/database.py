@@ -4,6 +4,8 @@ import os
 from typing import AsyncGenerator
 
 from user_service.db.base import Base
+import user_service.db.user  # noqa: F401
+import user_service.db.userpermission  # noqa: F401
 
 
 class Database:
@@ -11,7 +13,7 @@ class Database:
     
     def __init__(self):
         self.DB_HOST = os.getenv("DB_HOST", "postgres")
-        self.DB_PORT = os.getenv("DB_PORT", "5432")
+        self.DB_PORT = "5432"
         self.DB_USER = os.getenv("DB_USER", "postgres")
         self.DB_PASSWORD = os.getenv("DB_PASSWORD", "postgres")
         self.DB_NAME = os.getenv("DB_NAME", "user_service")

@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 from user_service.app.routes import permissions, health, admin
 from user_service.db.database import db
+import user_service.db  # noqa: F401
 
 
 @asynccontextmanager
