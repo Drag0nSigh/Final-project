@@ -2,16 +2,19 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from user_service.app.routes import permissions, health
+from user_service.app.routes import permissions, health, admin
+from user_service.db.database import db
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: подключение к БД, RabbitMQ, Redis
-    # TODO: инициализация подключений
+    # Startup: инициализация БД
+    await db.connect()
+    await db.init_db()
     yield
     # Shutdown: закрытие подключений
-    # TODO: закрытие подключений
+    await db.close()
+    # TODO: закрытие подключений к RabbitMQ, Redis
 
 
 app = FastAPI(
@@ -33,4 +36,5 @@ app.add_middleware(
 # Подключение роутов
 app.include_router(health.router, prefix="/health", tags=["Health"])
 app.include_router(permissions.router, prefix="", tags=["Permissions"])
+app.include_router(admin.router, tags=["Admin"])
 

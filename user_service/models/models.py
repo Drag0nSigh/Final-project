@@ -67,3 +67,35 @@ class ActiveGroup(BaseModel):
 class GetActiveGroupsOut(BaseModel):
     """Модель для получения активных групп (для Validation Service) - список групп"""
     groups: list[ActiveGroup] = Field(default_factory=list)
+
+
+# Служебные модели для создания объектов
+class CreateUserIn(BaseModel):
+    """Модель для создания пользователя (служебный эндпоинт)"""
+    username: str = Field(..., min_length=1, max_length=50, description="Имя пользователя")
+
+
+class CreateUserOut(BaseModel):
+    """Модель ответа при создании пользователя"""
+    id: int
+    username: str
+
+
+class CreateUserPermissionIn(BaseModel):
+    """Модель для создания UserPermission (служебный эндпоинт)"""
+    user_id: int = Field(gt=0, description="ID пользователя")
+    permission_type: Literal["access", "group"] = Field(description="Тип права: access или group")
+    item_id: int = Field(gt=0, description="ID доступа или группы")
+    status: Literal["active", "pending", "revoked"] = Field(default="active", description="Статус права")
+    request_id: Optional[str] = Field(default=None, description="UUID запроса (опционально, будет сгенерирован если не указан)")
+
+
+class CreateUserPermissionOut(BaseModel):
+    """Модель ответа при создании UserPermission"""
+    id: int
+    user_id: int
+    permission_type: str
+    item_id: int
+    status: str
+    request_id: str
+    assigned_at: Optional[datetime] = None
