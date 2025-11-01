@@ -1,0 +1,164 @@
+version: '3.8'
+
+services:
+  # ===== ИНФРАСТРУКТУРА (разделяемые сервисы) =====
+  
+  redis:
+    image: redis:7-alpine
+    container_name: access_control_redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - services_network
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: access_control_rabbitmq
+    ports:
+      - "5672:5672"   # AMQP порт
+      - "15672:15672" # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_VHOST: /
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - services_network
+    restart: unless-stopped
+
+  # ===== БАЗЫ ДАННЫХ =====
+  
+  postgres_user:
+    image: postgres:13-alpine
+    container_name: user_service_postgres
+    environment:
+      POSTGRES_DB: user_service
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_user_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - services_network
+
+  postgres_access:
+    image: postgres:13-alpine
+    container_name: access_control_service_postgres
+    environment:
+      POSTGRES_DB: access_control_service
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_access_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - services_network
+
+  # ===== БИЗНЕС СЕРВИСЫ =====
+  
+  user_service:
+    build:
+      context: ./user_service
+      dockerfile: Dockerfile
+    container_name: user_service
+    environment:
+      DB_HOST: postgres_user
+      DB_PORT: 5433
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: user_service
+      
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      
+      SERVICE_NAME: user_service
+      LOG_LEVEL: INFO
+    ports:
+      - "8001:8000"
+    depends_on:
+      postgres_user:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - ./user_service:/app/user_service
+    networks:
+      - services_network
+    restart: unless-stopped
+
+  access_control_service:
+    build:
+      context: ./access_control_service
+      dockerfile: Dockerfile
+    container_name: access_control_service
+    environment:
+      DB_HOST: postgres_access
+      DB_PORT: 5434
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: access_control_service
+      
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      
+      SERVICE_NAME: access_control_service
+      LOG_LEVEL: INFO
+    ports:
+      - "8002:8000"
+    depends_on:
+      postgres_access:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./access_control_service:/app/access_control_service
+    networks:
+      - services_network
+    restart: unless-stopped
+
+  # TODO: Добавить BFF и Validation сервисы
+
+volumes:
+  redis_data:
+  rabbitmq_data:
+  postgres_user_data:
+  postgres_access_data:
+
+networks:
+  services_network:
+    driver: bridge
+

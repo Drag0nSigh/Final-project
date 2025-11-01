@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, HTTPException, status
 from typing import Literal
 
 from user_service.models.models import (
@@ -47,7 +47,7 @@ async def revoke_permission(
     
     # TODO: Реализация
     # 1. Найти UserPermission с status='active'
-    # 2. Если не найдено - вернуть 404
+    # 2. Если не найдено - raise HTTPException(status_code=404)
     # 3. Установить status='revoked'
     # 4. Инвалидировать кэш Redis (user:{user_id}:groups)
     # 5. Вернуть RevokePermissionOut

@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, ForeignKey, UniqueConstraint
+from sqlalchemy.orm import relationship
 
 from access_control_service.db.base import Base
 
@@ -11,6 +12,7 @@ class Conflict(Base):
     group_id2 = Column(Integer, ForeignKey("groups.id"), primary_key=True, index=True)
     
     # Relationships для удобного доступа к группам
+    # Примечание: foreign_keys должны быть списком, когда определены после Column
     group1 = relationship(
         "Group",
         foreign_keys=[group_id1],
