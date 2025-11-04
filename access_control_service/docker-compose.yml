@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:13-alpine
+    container_name: access_control_service_postgres_dev
+    environment:
+      POSTGRES_DB: access_control_service
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_access_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - access_control_dev_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: access_control_service_redis_dev
+    ports:
+      - "6381:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_dev:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - access_control_dev_network
+
+  access_control_service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: access_control_service_dev
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5434
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: access_control_service
+      
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      
+      SERVICE_NAME: access_control_service
+      LOG_LEVEL: INFO
+    ports:
+      - "8002:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app/access_control_service
+    networks:
+      - access_control_dev_network
+    restart: unless-stopped
+
+volumes:
+  postgres_access_dev:
+  redis_dev:
+
+networks:
+  access_control_dev_network:
+    driver: bridge
+

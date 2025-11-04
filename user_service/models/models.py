@@ -99,3 +99,16 @@ class CreateUserPermissionOut(BaseModel):
     status: str
     request_id: str
     assigned_at: Optional[datetime] = None
+
+
+class UpdatePermissionStatusIn(BaseModel):
+    """Модель для обновления статуса заявки (активация/отклонение)"""
+    status: Literal["active", "rejected"] = Field(description="Новый статус: 'active' или 'rejected'")
+    reason: Optional[str] = Field(default=None, description="Причина отклонения (опционально)")
+
+
+class UpdatePermissionStatusOut(BaseModel):
+    """Модель ответа при обновлении статуса заявки"""
+    request_id: str
+    status: str
+    message: str = Field(description="Сообщение о результате операции")

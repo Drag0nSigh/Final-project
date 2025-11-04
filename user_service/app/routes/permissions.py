@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query, HTTPException, status
+from fastapi import APIRouter, Query, HTTPException, status, Path
 from typing import Literal
 
 from user_service.models.models import (
@@ -7,7 +7,10 @@ from user_service.models.models import (
     RevokePermissionIn,
     RevokePermissionOut,
     GetUserPermissionsOut,
-    GetActiveGroupsOut
+    GetActiveGroupsOut,
+    UpdatePermissionStatusIn,
+    UpdatePermissionStatusOut,
+    UserPermission
 )
 
 router = APIRouter()
@@ -85,5 +88,47 @@ async def get_current_active_groups(user_id: int):
     #    - status='active'
     # 2. Вернуть список групп в формате GetActiveGroupsOut
     # 3. Можно использовать кэш Redis
+    pass
+
+
+@router.put("/permissions/{request_id}/status", response_model=UpdatePermissionStatusOut)
+async def update_permission_status(
+    request_id: str = Path(..., description="UUID заявки для обновления статуса"),
+    status_data: UpdatePermissionStatusIn = ...
+):
+    """
+    Обновление статуса заявки (активация или отклонение)
+    
+    Используется BFF Service после получения результата валидации из RabbitMQ.
+    
+    - Ищет заявку по request_id
+    - Обновляет статус на 'active' или 'rejected'
+    - Если активация - устанавливает assigned_at
+    - Инвалидирует кэш пользователя
+    """
+    # TODO: Реализация
+    # 1. Найти UserPermission по request_id
+    # 2. Если не найдено - raise HTTPException(status_code=404)
+    # 3. Проверить, что текущий статус 'pending' (можно обновлять только pending)
+    # 4. Установить новый статус (status_data.status)
+    # 5. Если статус 'active' - установить assigned_at = datetime.now()
+    # 6. Инвалидировать кэш Redis (user:{user_id}:groups)
+    # 7. Вернуть UpdatePermissionStatusOut
+    pass
+
+
+@router.get("/permissions/{request_id}", response_model=UserPermission)
+async def get_permission_by_request_id(
+    request_id: str = Path(..., description="UUID заявки")
+):
+    """
+    Получение информации о заявке по request_id
+    
+    Используется для отслеживания статуса заявки клиентом
+    """
+    # TODO: Реализация
+    # 1. Найти UserPermission по request_id
+    # 2. Если не найдено - raise HTTPException(status_code=404)
+    # 3. Вернуть UserPermission
     pass
 
