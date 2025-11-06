@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query, HTTPException, status, Path
+from fastapi import APIRouter, Query, HTTPException, status
 from typing import Literal
 
 from bff_service.models.models import (
@@ -7,8 +7,7 @@ from bff_service.models.models import (
     RevokePermissionIn,
     RevokePermissionOut,
     GetUserPermissionsOut,
-    GetRequiredAccessOut,
-    UserPermissionOut
+    GetRequiredAccessOut
 )
 
 router = APIRouter()
@@ -85,22 +84,5 @@ async def get_required_access_for_resource(resource_id: int):
     # 1. Вызвать Access Control Service API: GET /resources/{resource_id}/required_accesses
     # 2. Вернуть GetRequiredAccessOut
     # 3. Обработать ошибки (404 если ресурс не найден)
-    pass
-
-
-@router.get("/permissions/{request_id}", response_model=UserPermissionOut)
-async def get_permission_by_request_id(
-    request_id: str = Path(..., description="UUID заявки")
-):
-    """
-    Получение информации о заявке по request_id
-    
-    Используется для отслеживания статуса заявки клиентом.
-    Проксирует запрос в User Service.
-    """
-    # TODO: Реализация
-    # 1. Вызвать User Service API: GET /permissions/{request_id}
-    # 2. Вернуть UserPermissionOut
-    # 3. Обработать ошибки (404 если заявка не найдена)
     pass
 

@@ -4,9 +4,7 @@ from sqlalchemy import select
 
 from user_service.models.models import (
     CreateUserIn,
-    CreateUserOut,
-    CreateUserPermissionIn,
-    CreateUserPermissionOut
+    CreateUserOut
 )
 from user_service.db.database import db
 from user_service.db.user import User
@@ -41,22 +39,4 @@ async def create_user(user_data: CreateUserIn, session: AsyncSession = Depends(d
     return CreateUserOut(id=new_user.id, username=new_user.username)
 
 
-@router.post("/user-permissions", response_model=CreateUserPermissionOut, status_code=status.HTTP_201_CREATED)
-async def create_user_permission(permission_data: CreateUserPermissionIn):
-    """
-    Служебный эндпоинт для создания UserPermission
-    
-    Создает право пользователя напрямую (без прохождения через валидацию).
-    Используется для служебных целей, начальной настройки системы или
-    администрирования.
-    
-    Внимание: Этот эндпоинт обходит проверку конфликтов прав!
-    """
-    # TODO: Реализация
-    # 1. Проверить, существует ли пользователь с user_id
-    # 2. Проверить UniqueConstraint (не должно быть дубля)
-    # 3. Сгенерировать request_id (UUID), если не передан
-    # 4. Создать UserPermission в БД
-    # 5. Вернуть CreateUserPermissionOut
-    pass
 

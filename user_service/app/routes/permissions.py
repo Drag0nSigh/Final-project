@@ -9,8 +9,7 @@ from user_service.models.models import (
     GetUserPermissionsOut,
     GetActiveGroupsOut,
     UpdatePermissionStatusIn,
-    UpdatePermissionStatusOut,
-    UserPermission
+    UpdatePermissionStatusOut
 )
 
 router = APIRouter()
@@ -114,21 +113,5 @@ async def update_permission_status(
     # 5. Если статус 'active' - установить assigned_at = datetime.now()
     # 6. Инвалидировать кэш Redis (user:{user_id}:groups)
     # 7. Вернуть UpdatePermissionStatusOut
-    pass
-
-
-@router.get("/permissions/{request_id}", response_model=UserPermission)
-async def get_permission_by_request_id(
-    request_id: str = Path(..., description="UUID заявки")
-):
-    """
-    Получение информации о заявке по request_id
-    
-    Используется для отслеживания статуса заявки клиентом
-    """
-    # TODO: Реализация
-    # 1. Найти UserPermission по request_id
-    # 2. Если не найдено - raise HTTPException(status_code=404)
-    # 3. Вернуть UserPermission
     pass
 
