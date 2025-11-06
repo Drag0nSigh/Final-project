@@ -90,3 +90,7 @@ db.sqlite3
 
 # logs
 logs/
+
+# temporary files
+*.temp*
+*.tmp*

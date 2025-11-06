@@ -90,7 +90,7 @@ services:
     container_name: user_service
     environment:
       DB_HOST: postgres_user
-      DB_PORT: 5433
+      DB_PORT: 5432
       DB_USER: postgres
       DB_PASSWORD: postgres
       DB_NAME: user_service
@@ -127,7 +127,7 @@ services:
     container_name: access_control_service
     environment:
       DB_HOST: postgres_access
-      DB_PORT: 5434
+      DB_PORT: 5432
       DB_USER: postgres
       DB_PASSWORD: postgres
       DB_NAME: access_control_service
