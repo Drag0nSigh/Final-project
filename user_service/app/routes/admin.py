@@ -32,9 +32,9 @@ async def create_user(user_data: CreateUserIn, session: AsyncSession = Depends(d
     
     new_user = User(username=user_data.username)
     session.add(new_user)
-    await session.flush()  # Получаем ID без коммита
+    await session.flush()
     
-    await session.refresh(new_user)  # Обновляем объект из БД
+    await session.refresh(new_user)
     
     return CreateUserOut(id=new_user.id, username=new_user.username)
 

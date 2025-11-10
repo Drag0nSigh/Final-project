@@ -4,8 +4,6 @@ import os
 from typing import AsyncGenerator
 
 from user_service.db.base import Base
-import user_service.db.user  # noqa: F401
-import user_service.db.userpermission  # noqa: F401
 
 
 class Database:
@@ -111,7 +109,6 @@ class Database:
             await self.connect()
         
         async with self.engine.connect() as conn:
-            # Проверяем существование таблицы users (если она есть, значит таблицы уже созданы)
             result = await conn.execute(
                 text(
                     "SELECT EXISTS ("
