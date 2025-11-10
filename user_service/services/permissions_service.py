@@ -39,20 +39,7 @@ class PermissionService:
         raise NotImplementedError
 
     async def get_permissions(self, user_id: int) -> GetUserPermissionsOut:
-        """Возвращает все права пользователя, разделяя их на группы и доступы.
-
-        ***ВАЖНО для BFF Service***: BFF использует этот метод для получения всех прав пользователя.
-        Формат ответа: ``GetUserPermissionsOut`` с разделением на ``groups`` и ``accesses``.
-        Каждый элемент содержит: id, permission_type, item_id, item_name, status, assigned_at.
-
-        ***ВАЖНО для Access Control Service***: В будущем этот метод будет обогащаться данными из
-        Access Control Service (детали доступов, ресурсы, вложенные структуры). BFF может агрегировать
-        данные от User Service и Access Control Service для формирования полного ответа клиенту.
-
-        Пока метод возвращает только данные из таблицы ``user_permissions`` без
-        вложенных структур (доступы групп и т.п.). На следующем этапе добавим
-        интеграцию с Access Control Service, чтобы обогащать ответ.
-        """
+        """Возвращает все права пользователя, разделяя их на группы и доступы."""
 
         stmt = select(UserPermission).where(UserPermission.user_id == user_id)
         result = await self.session.execute(stmt)
@@ -74,13 +61,7 @@ class PermissionService:
         )
 
     async def get_active_groups(self, user_id: int) -> GetActiveGroupsOut:
-        """Возвращает активные группы пользователя, используя кэш Redis.
-
-        ***ВАЖНО для Validation Service***: Validation Service использует этот метод для получения
-        активных групп пользователя при проверке конфликтов. Формат ответа: ``GetActiveGroupsOut``
-        с полем ``groups`` (list[ActiveGroup]), где каждый элемент содержит ``id`` (int) и ``name`` (Optional[str]).
-        Возвращаются только группы со статусом ``active``. Используется кэш Redis для ускорения.
-        """
+        """Возвращает активные группы пользователя, используя кэш Redis."""
 
         if self.redis_conn is not None:
             cached = await get_user_groups_from_cache(self.redis_conn, user_id)
@@ -115,12 +96,23 @@ class PermissionService:
     ) -> Optional[UserPermission]:
         """Применяет результат валидации к заявке пользователя."""
 
-        # Ищем заявку по request_id
         stmt = select(UserPermission).where(UserPermission.request_id == request_id)
         result = await self.session.execute(stmt)
         permission = result.scalar_one_or_none()
 
         if permission is None:
+            return None
+
+        if (
+            permission.user_id != user_id
+            or permission.permission_type != permission_type
+            or permission.item_id != item_id
+        ):
+            logger.warning(
+                f"Несоответствие параметров заявки: request_id={request_id}, "
+                f"ожидалось user_id={user_id}, permission_type={permission_type}, item_id={item_id}, "
+                f"найдено user_id={permission.user_id}, permission_type={permission.permission_type}, item_id={permission.item_id}"
+            )
             return None
 
         if approved:
@@ -132,9 +124,7 @@ class PermissionService:
         if self.redis_conn is not None and permission_type == "group":
             await invalidate_user_groups_cache(self.redis_conn, user_id)
             logger.debug(
-                "Кэш активных групп инвалидирован: user_id=%s (из-за изменения статуса заявки %s)",
-                user_id,
-                request_id,
+                f"Кэш активных групп инвалидирован: user_id={user_id} (из-за изменения статуса заявки {request_id})"
             )
 
         return permission
@@ -165,10 +155,7 @@ class PermissionService:
         if self.redis_conn is not None and permission.permission_type == "group":
             await invalidate_user_groups_cache(self.redis_conn, user_id)
             logger.debug(
-                "Кэш активных групп инвалидирован: user_id=%s (из-за отзыва группы permission_type=%s, item_id=%s)",
-                user_id,
-                permission_type,
-                item_id,
+                f"Кэш активных групп инвалидирован: user_id={user_id} (из-за отзыва группы permission_type={permission.permission_type}, item_id={permission.item_id})"
             )
 
         return permission

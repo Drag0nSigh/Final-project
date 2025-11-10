@@ -8,9 +8,6 @@ import redis.asyncio as redis
 from user_service.config.settings import get_settings
 
 
-# ***ВАЖНО для Validation Service***: Формат ключа Redis для кэша активных групп пользователя.
-# Validation Service может использовать этот же формат ключа для кэширования данных, полученных от User Service.
-# Формат: "user:{user_id}:active_groups" (например, "user:123:active_groups")
 USER_GROUPS_KEY_PREFIX = "user:{user_id}:active_groups"
 
 

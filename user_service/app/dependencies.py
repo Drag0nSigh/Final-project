@@ -21,11 +21,7 @@ async def get_redis_connection() -> AsyncGenerator[redis.Redis, None]:
     """Даёт активное соединение с Redis."""
 
     connection = redis_client.connection
-    try:
-        yield connection
-    finally:
-        pass
-
+    yield connection
 
 def get_rabbitmq_manager_dependency() -> RabbitMQManager:
     """Возвращает singleton-менеджер RabbitMQ."""

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable, List
+from typing import Iterable
 
 from user_service.db.userpermission import UserPermission as UserPermissionModel
 from user_service.models.models import (
@@ -15,7 +15,7 @@ def permission_model_to_schema(permission: UserPermissionModel) -> PermissionOut
 
     return PermissionOut(
         id=permission.id,
-        permission_type=permission.permission_type,  # type: ignore[arg-type]
+        permission_type=permission.permission_type,
         item_id=permission.item_id,
         item_name=permission.item_name,
         status=permission.status,
@@ -28,7 +28,7 @@ def permissions_to_active_groups_schema(
 ) -> GetActiveGroupsOut:
     """Формирует ответ ``GetActiveGroupsOut`` из набора ``UserPermission``."""
 
-    groups: List[ActiveGroup] = []
+    groups: list[ActiveGroup] = []
     for permission in permissions:
         groups.append(
             ActiveGroup(

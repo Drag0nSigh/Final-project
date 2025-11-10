@@ -4,6 +4,9 @@ import os
 from typing import AsyncGenerator
 
 from user_service.db.base import Base
+# Импорт моделей для регистрации в Base.metadata перед созданием таблиц
+from user_service.db.user import User  # noqa: F401
+from user_service.db.userpermission import UserPermission  # noqa: F401
 
 
 class Database:
@@ -89,7 +92,7 @@ class Database:
         
         self.engine = create_async_engine(
             self.DATABASE_URL,
-            echo=True,  # Логирование SQL запросов (для разработки)
+            echo=True,
             future=True,
         )
         

@@ -1,13 +1,5 @@
-"""
-Pydantic модели для RabbitMQ сообщений Validation Service
-
-Модели для обмена данными между сервисами через RabbitMQ:
-- ValidationRequest: запрос на валидацию из validation_queue
-- ValidationResult: результат валидации для отправки в result_queue
-"""
-
 from typing import Literal, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class ValidationRequest(BaseModel):
@@ -20,8 +12,9 @@ class ValidationRequest(BaseModel):
     item_id: int = Field(gt=0, description="ID доступа или группы")
     request_id: str = Field(description="UUID заявки для отслеживания")
     
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
             "example": {
                 "user_id": 123,
                 "permission_type": "group",
@@ -29,7 +22,7 @@ class ValidationRequest(BaseModel):
                 "request_id": "550e8400-e29b-41d4-a716-446655440000"
             }
         }
-
+    )
 
 class ValidationResult(BaseModel):
     """Модель результата валидации для отправки в RabbitMQ"""
@@ -46,8 +39,9 @@ class ValidationResult(BaseModel):
     )
     item_id: int = Field(description="ID доступа или группы")
     
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
             "example": {
                 "request_id": "550e8400-e29b-41d4-a716-446655440000",
                 "approved": False,
@@ -57,4 +51,5 @@ class ValidationResult(BaseModel):
                 "item_id": 2
             }
         }
+    )
 

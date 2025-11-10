@@ -1,13 +1,17 @@
+import logging
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker, AsyncEngine
 from sqlalchemy import text
 import os
 from typing import AsyncGenerator
 
 from access_control_service.db.base import Base
-import access_control_service.db.resource  # noqa: F401
-import access_control_service.db.access  # noqa: F401
-import access_control_service.db.group  # noqa: F401
-import access_control_service.db.conflict  # noqa: F401
+# Импорт моделей для регистрации в Base.metadata перед созданием таблиц
+from access_control_service.db.resource import Resource  # noqa: F401
+from access_control_service.db.access import Access, AccessResource  # noqa: F401
+from access_control_service.db.group import Group, GroupAccess  # noqa: F401
+from access_control_service.db.conflict import Conflict  # noqa: F401
+
+logger = logging.getLogger(__name__)
 
 
 class Database:
@@ -54,7 +58,7 @@ class Database:
             await temp_engine.dispose()
             return exists
         except Exception as e:
-            print(f"Ошибка проверки существования БД: {e}")
+            logger.warning(f"Ошибка проверки существования БД: {e}")
             return False
     
     async def _create_database(self):
@@ -62,7 +66,7 @@ class Database:
         exists = await self._check_database_exists()
         
         if exists:
-            print(f"База данных '{self.DB_NAME}' уже существует")
+            logger.debug(f"База данных '{self.DB_NAME}' уже существует")
             return
         
         try:
@@ -76,17 +80,17 @@ class Database:
                 await conn.execute(
                     text(f'CREATE DATABASE "{self.DB_NAME}"')
                 )
-                print(f"База данных '{self.DB_NAME}' создана успешно")
+                logger.debug(f"База данных '{self.DB_NAME}' создана успешно")
             
             await temp_engine.dispose()
         except Exception as e:
-            print(f"Ошибка создания БД: {e}")
+            logger.exception(f"Ошибка создания БД: {e}")
             raise
     
     async def connect(self):
         """Создает подключение к БД"""
         if self.engine is not None:
-            print("База данных уже подключена")
+            logger.debug("База данных уже подключена")
             return
         
         await self._create_database()
@@ -105,7 +109,7 @@ class Database:
             autocommit=False,
         )
         
-        print(f"Подключено к базе данных '{self.DB_NAME}'")
+        logger.debug(f"Подключено к базе данных '{self.DB_NAME}'")
     
     async def init_db(self):
         """Инициализация БД - создание таблиц"""
@@ -124,12 +128,12 @@ class Database:
             tables_exist = result.scalar()
             
             if tables_exist:
-                print("База данных уже содержит таблицы")
+                logger.debug("База данных уже содержит таблицы")
                 return
         
         async with self.engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-            print("Таблицы базы данных созданы успешно")
+            logger.debug("Таблицы базы данных созданы успешно")
     
     async def get_db(self) -> AsyncGenerator[AsyncSession, None]:
         """Dependency для получения сессии БД"""
@@ -152,9 +156,8 @@ class Database:
             await self.engine.dispose()
             self.engine = None
             self.AsyncSessionLocal = None
-            print(f"Отключено от базы данных '{self.DB_NAME}'")
+            logger.debug(f"Отключено от базы данных '{self.DB_NAME}'")
 
 
-# Глобальный экземпляр
 db = Database()
 

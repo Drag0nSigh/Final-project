@@ -1,12 +1,5 @@
-"""
-HTTP клиент для взаимодействия с User Service
-
-Получение данных о пользователях и их правах для проверки конфликтов.
-"""
-
 import logging
-from typing import List, Dict, Any, Optional
-import httpx
+from typing import Any, Optional
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from validation_service.services.base_client import BaseServiceClient
@@ -28,40 +21,44 @@ class UserServiceClient(BaseServiceClient):
         super().__init__(base_url, cache, timeout)
     
     @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=4, max=10)
+        stop=stop_after_attempt(5),
+        wait=wait_exponential(multiplier=2, min=2, max=10)
     )
     async def get_user_active_groups(
         self,
         user_id: int,
         use_cache: bool = True
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Получить активные группы пользователя"""
 
         cache_key = f"user:{user_id}:groups"
         
-        async def fetch_groups():
-            """Функция для получения групп из API"""
-            url = f"{self.base_url}/users/{user_id}/current_active_groups"
-            response = await self.client.get(url)
-            response.raise_for_status()
-            data = response.json()
-            return data.get("groups", [])
-        
-        return await self._cached_request(
+        cached = await self._get_from_cache(
             cache_key=cache_key,
-            fetch_func=fetch_groups,
-            ttl=USER_GROUPS_TTL,
             response_key="groups",
             use_cache=use_cache,
             cache_log_message=f"Кэш для пользователя {user_id} групп"
         )
+        if cached is not None:
+            return cached
+        
+        data = await self._get_json_data(f"users/{user_id}/current_active_groups", response_key="groups")
+        
+        await self._set_to_cache(
+            cache_key=cache_key,
+            data=data,
+            response_key="groups",
+            ttl=USER_GROUPS_TTL,
+            use_cache=use_cache,
+            cache_log_message=f"Кэш сохранен для пользователя {user_id} групп"
+        )
+        
+        return data
     
     async def invalidate_user_cache(self, user_id: int):
         """Инвалидировать кэш пользователя"""
-
-        if self.cache:
-            cache_key = f"user:{user_id}:groups"
-            await self.cache.delete(cache_key)
-            logger.debug(f"Invalidated cache for user {user_id}")
+        await self._invalidate_cache(
+            f"user:{user_id}:groups",
+            f"Кэш инвалидирован для пользователя {user_id}"
+        )
 

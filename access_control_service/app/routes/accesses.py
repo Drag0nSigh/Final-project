@@ -1,79 +1,80 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from access_control_service.db.database import db
 from access_control_service.models.models import (
-    CreateAccessIn,
-    CreateAccessOut,
     Access as AccessOut,
     GetAccessGroupsOut,
-    AddResourceToAccessIn
+    Resource as ResourceModel,
 )
 from access_control_service.services.access_service import AccessService
+from access_control_service.app.utils.error_handlers import handle_errors
 
 router = APIRouter()
 
 
-@router.post("", response_model=CreateAccessOut, status_code=201)
-async def create_access(
-    access_in: CreateAccessIn,
-    session: AsyncSession = Depends(db.get_db)
-):
-    """Создание доступа (служебный эндпоинт)"""
-    pass
-
-
 @router.get("/{access_id}", response_model=AccessOut)
+@handle_errors(error_message_prefix="при получении доступа")
 async def get_access(
     access_id: int,
     session: AsyncSession = Depends(db.get_db)
 ):
     """Получение доступа по ID"""
-    pass
+    access = await AccessService.get_access(session, access_id)
+    
+    resources_out = [
+        ResourceModel(
+            id=res.id,
+            name=res.name,
+            type=res.type,
+            description=res.description,
+        )
+        for res in access.resources
+    ]
+    
+    return AccessOut(
+        id=access.id,
+        name=access.name,
+        resources=resources_out,
+    )
 
 
 @router.get("", response_model=list[AccessOut])
+@handle_errors(error_message_prefix="при получении всех доступов")
 async def get_all_accesses(
     session: AsyncSession = Depends(db.get_db)
 ):
     """Получение всех доступов"""
-    pass
+    accesses = await AccessService.get_all_accesses(session)
+    
+    result = []
+    for access in accesses:
+        resources_out = [
+            ResourceModel(
+                id=res.id,
+                name=res.name,
+                type=res.type,
+                description=res.description,
+            )
+            for res in access.resources
+        ]
+        result.append(
+            AccessOut(
+                id=access.id,
+                name=access.name,
+                resources=resources_out,
+            )
+        )
+    
+    return result
 
 
 @router.get("/{access_id}/groups", response_model=GetAccessGroupsOut)
+@handle_errors(error_message_prefix="при получении групп для доступа")
 async def get_groups_by_access(
     access_id: int,
     session: AsyncSession = Depends(db.get_db)
 ):
     """Получение групп, содержащих доступ"""
-    pass
-
-
-@router.post("/{access_id}/resources", response_model=AccessOut)
-async def add_resource_to_access(
-    access_id: int,
-    resource_data: AddResourceToAccessIn,
-    session: AsyncSession = Depends(db.get_db)
-):
-    """Добавление ресурса к доступу"""
-    pass
-
-
-@router.delete("/{access_id}/resources/{resource_id}", status_code=204)
-async def remove_resource_from_access(
-    access_id: int,
-    resource_id: int,
-    session: AsyncSession = Depends(db.get_db)
-):
-    """Удаление ресурса из доступа"""
-    pass
-
-
-@router.delete("/{access_id}", status_code=204)
-async def delete_access(
-    access_id: int,
-    session: AsyncSession = Depends(db.get_db)
-):
-    """Удаление доступа"""
-    pass
+    return await AccessService.get_groups_containing_access(session, access_id)
 

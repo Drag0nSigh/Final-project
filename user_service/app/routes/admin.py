@@ -15,11 +15,8 @@ router = APIRouter(prefix="/admin", tags=["Admin"])
 @router.post("/users", response_model=CreateUserOut, status_code=status.HTTP_201_CREATED)
 async def create_user(user_data: CreateUserIn, session: AsyncSession = Depends(db.get_db)):
     """
-    Служебный эндпоинт для создания пользователя
+    Служебный эндпоинт для создания пользователя"""
     
-    Создает нового пользователя в системе.
-    Используется для начальной настройки или административных задач.
-    """
     stmt = select(User).where(User.username == user_data.username)
     result = await session.execute(stmt)
     existing_user = result.scalar_one_or_none()

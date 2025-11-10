@@ -11,8 +11,6 @@ class Conflict(Base):
     group_id1 = Column(Integer, ForeignKey("groups.id"), primary_key=True, index=True)
     group_id2 = Column(Integer, ForeignKey("groups.id"), primary_key=True, index=True)
     
-    # Relationships для удобного доступа к группам
-    # Примечание: foreign_keys должны быть списком, когда определены после Column
     group1 = relationship(
         "Group",
         foreign_keys=[group_id1],
@@ -24,5 +22,4 @@ class Conflict(Base):
         back_populates="conflicts_as_group2"
     )
     
-    # Composite Primary Key автоматически создается через primary_key=True на обеих колонках
 

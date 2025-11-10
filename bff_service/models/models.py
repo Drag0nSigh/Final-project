@@ -1,4 +1,4 @@
-from typing import Literal, Optional, List
+from typing import Literal, Optional
 from datetime import datetime
 from pydantic import BaseModel, Field
 
@@ -43,22 +43,8 @@ class PermissionOut(BaseModel):
 class GetUserPermissionsOut(BaseModel):
     """Модель для получения всех прав пользователя"""
     user_id: int
-    groups: List[PermissionOut] = Field(default_factory=list)
-    accesses: List[PermissionOut] = Field(default_factory=list)
-
-
-# Модели для получения необходимых доступов для ресурса
-class AccessOut(BaseModel):
-    """Модель доступа для ресурса"""
-    id: int
-    name: str
-    resources: List[dict] = Field(default_factory=list)  # Упрощенная модель ресурсов
-
-
-class GetRequiredAccessOut(BaseModel):
-    """Модель для получения необходимых доступов для ресурса"""
-    resource_id: int
-    accesses: List[AccessOut] = Field(default_factory=list)
+    groups: list[PermissionOut] = Field(default_factory=list)
+    accesses: list[PermissionOut] = Field(default_factory=list)
 
 
 # Модели для работы с заявками (трекинг)
@@ -71,4 +57,37 @@ class UserPermissionOut(BaseModel):
     status: Literal["active", "pending", "revoked", "rejected"]
     request_id: str
     assigned_at: Optional[datetime] = None
+
+
+class Resource(BaseModel):
+    """Модель ресурса"""
+    id: int
+    name: str
+    type: str
+    description: Optional[str] = None
+
+
+class Access(BaseModel):
+    """Модель доступа"""
+    id: int
+    name: str
+    resources: list[Resource] = Field(default_factory=list)
+
+
+class Group(BaseModel):
+    """Модель группы"""
+    id: int
+    name: str
+    accesses: list[Access] = Field(default_factory=list)
+
+
+class Conflict(BaseModel):
+    """Модель конфликта"""
+    group_id1: int
+    group_id2: int
+
+
+class GetConflictsOut(BaseModel):
+    """Модель для получения всех конфликтов"""
+    conflicts: list[Conflict] = Field(default_factory=list)
 

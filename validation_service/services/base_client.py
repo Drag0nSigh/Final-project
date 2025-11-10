@@ -34,6 +34,82 @@ class BaseServiceClient:
 
         await self.client.aclose()
     
+    async def _get_from_cache(
+        self,
+        cache_key: str,
+        response_key: Optional[str] = None,
+        use_cache: bool = True,
+        cache_log_message: Optional[str] = None
+    ) -> Optional[Any]:
+        """Получить данные из кэша"""
+        
+        if use_cache and self.cache:
+            cached = await self.cache.get_json(cache_key)
+            if cached is not None:
+                log_msg = cache_log_message or f"Кэш hit для {cache_key}"
+                logger.debug(log_msg)
+                
+                if response_key:
+                    return cached.get(response_key, [])
+                return cached
+        
+        return None
+    
+    async def _set_to_cache(
+        self,
+        cache_key: str,
+        data: Any,
+        response_key: Optional[str] = None,
+        ttl: int = 3600,
+        use_cache: bool = True,
+        cache_log_message: Optional[str] = None
+    ) -> None:
+        """Сохранить данные в кэш"""
+        
+        if use_cache and self.cache:
+            if response_key:
+                cache_value = {response_key: data}
+            else:
+                cache_value = data
+            
+            await self.cache.setex_json(
+                cache_key,
+                ttl=ttl,
+                value=cache_value
+            )
+            
+            log_msg = cache_log_message or f"Кэш сохранен для {cache_key}"
+            logger.debug(log_msg)
+    
+    async def _invalidate_cache(
+        self,
+        cache_key: str,
+        log_message: Optional[str] = None
+    ) -> None:
+        """Инвалидировать кэш по ключу"""
+        
+        if self.cache:
+            await self.cache.delete(cache_key)
+            log_msg = log_message or f"Кэш инвалидирован для {cache_key}"
+            logger.debug(log_msg)
+    
+    async def _get_json_data(
+        self,
+        path: str,
+        response_key: Optional[str] = None,
+        default: Any = []
+    ) -> Any:
+        """Выполнить GET запрос и извлечь данные из JSON ответа"""
+        
+        url = f"{self.base_url}/{path.lstrip('/')}"
+        response = await self.client.get(url)
+        response.raise_for_status()
+        
+        data = response.json()
+        if response_key:
+            return data.get(response_key, default)
+        return data
+    
     async def _cached_request(
         self,
         cache_key: str,
@@ -45,21 +121,18 @@ class BaseServiceClient:
     ) -> Any:
         """Универсальный метод для запроса с кэшированием"""
 
-        # Проверка кэша
         if use_cache and self.cache:
             cached = await self.cache.get_json(cache_key)
             if cached is not None:
                 log_msg = cache_log_message or f"Кэш hit для {cache_key}"
                 logger.debug(log_msg)
                 
-                # Если указан response_key, извлекаем значение по ключу
                 if response_key:
                     return cached.get(response_key, [])
                 return cached
         
         data = await fetch_func()
         
-        # Сохранение в кэш
         if use_cache and self.cache:
             if response_key:
                 cache_value = {response_key: data}

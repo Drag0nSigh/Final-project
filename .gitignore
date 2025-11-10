@@ -94,3 +94,8 @@ logs/
 # temporary files
 *.temp*
 *.tmp*
+
+# data for manual tests
+manual_tests/*
+
+*.json

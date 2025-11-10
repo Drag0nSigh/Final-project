@@ -33,14 +33,9 @@ class RedisClient:
         """Устанавливает асинхронное соединение с Redis, если его ещё нет"""
 
         if self._connection is not None:
-            # Повторный connect может происходить при
-            # повторной инициализации lifespan (например, горячий рестарт).
             return
 
         dsn = self._settings.build_redis_dsn()
-        # ``from_url`` создаёт асинхронный клиент. decode_responses=True позволит работать
-        # со строками без ручного декодирования байтов. Это удобно, потому что мы будем
-        # хранить JSON/строки в кэше.
         self._connection = redis.from_url(dsn, decode_responses=True)
 
     async def close(self) -> None:

@@ -1,20 +1,38 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+import logging
+import sys
 from contextlib import asynccontextmanager
 
-from bff_service.app.routes import permissions, health
-# TODO: импорт для RabbitMQ consumer когда будет реализован
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from bff_service.app.routes import permissions, health, resources, accesses, groups, conflicts
+from bff_service.app.dependencies import close_all_clients
+from bff_service.config.settings import get_settings
+
+settings = get_settings()
+log_level = getattr(logging, settings.log_level.upper(), logging.INFO)
+logging.basicConfig(
+    level=log_level,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ],
+    force=True
+)
+
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: инициализация подключений
-    # TODO: Подключение к RabbitMQ для consumer result_queue
-    # TODO: Проверка доступности User Service и Access Control Service
+    """Управление жизненным циклом приложения."""
+    logger.debug("BFF Service запускается...")
     yield
-    # Shutdown: закрытие подключений
-    # TODO: Закрытие подключений к RabbitMQ
-    # TODO: Закрытие HTTP клиентов (httpx.AsyncClient)
+    logger.debug("BFF Service завершает работу, закрытие HTTP клиентов...")
+    await close_all_clients()
+    logger.debug("BFF Service остановлен")
 
 
 app = FastAPI(
@@ -33,10 +51,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Подключение роутов
 app.include_router(health.router, prefix="/health", tags=["Health"])
 app.include_router(permissions.router, prefix="", tags=["Permissions"])
+app.include_router(resources.router, prefix="", tags=["Resources"])
+app.include_router(accesses.router, prefix="", tags=["Accesses"])
+app.include_router(groups.router, prefix="", tags=["Groups"])
+app.include_router(conflicts.router, prefix="", tags=["Conflicts"])
 
-# TODO: Подключить RabbitMQ consumer для обработки результатов валидации
-# app.include_router(rabbitmq_consumer.router, tags=["Internal"])
 

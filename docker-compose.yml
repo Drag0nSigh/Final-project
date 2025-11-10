@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # ===== ИНФРАСТРУКТУРА (разделяемые сервисы) =====
   
@@ -150,7 +148,67 @@ services:
       - services_network
     restart: unless-stopped
 
-  # TODO: Добавить BFF и Validation сервисы
+  validation_service:
+    build:
+      context: ./validation_service
+      dockerfile: Dockerfile
+    container_name: validation_service
+    environment:
+      USER_SERVICE_URL: http://user_service:8000
+      ACCESS_CONTROL_SERVICE_URL: http://access_control_service:8000
+      
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      RABBITMQ_VHOST: /
+      VALIDATION_QUEUE: validation_queue
+      RESULT_QUEUE: result_queue
+      
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      
+      HTTP_TIMEOUT: 30.0
+      LOG_LEVEL: INFO
+    ports:
+      - "8003:8000"
+    depends_on:
+      user_service:
+        condition: service_started
+      access_control_service:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - ./validation_service:/app/validation_service
+    networks:
+      - services_network
+    restart: unless-stopped
+
+  bff_service:
+    build:
+      context: ./bff_service
+      dockerfile: Dockerfile
+    container_name: bff_service
+    environment:
+      BFF_SERVICE_USER_SERVICE_URL: http://user_service:8000
+      BFF_SERVICE_ACCESS_CONTROL_SERVICE_URL: http://access_control_service:8000
+      BFF_SERVICE_HTTP_TIMEOUT: 30.0
+      BFF_SERVICE_LOG_LEVEL: INFO
+    ports:
+      - "8000:8000"
+    depends_on:
+      user_service:
+        condition: service_started
+      access_control_service:
+        condition: service_started
+    volumes:
+      - ./bff_service:/app/bff_service
+    networks:
+      - services_network
+    restart: unless-stopped
 
 volumes:
   redis_data:

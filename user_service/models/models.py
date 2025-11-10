@@ -10,12 +10,8 @@ class User(BaseModel):
 
 
 class UserPermission(BaseModel):
-    """***ВАЖНО для BFF Service***: Модель права пользователя.
-    
-    Используется в ответах эндпоинтов. Поле ``status`` может быть: "active", "pending", "revoked", "rejected".
-    Поле ``item_name`` содержит название доступа/группы (может быть None, если не заполнено).
-    Поле ``request_id`` используется для отслеживания заявки через весь жизненный цикл.
-    """
+    """***ВАЖНО для BFF Service***: Модель права пользователя."""
+
     model_config = ConfigDict(from_attributes=True)
     id: int
     user_id: int
@@ -29,43 +25,36 @@ class UserPermission(BaseModel):
 
 # Pydantic модели для ввода (Input)
 class RequestAccessIn(BaseModel):
-    """***ВАЖНО для BFF Service***: Модель запроса на создание заявки.
-    
-    Используется в эндпоинте POST /request. BFF должен отправлять запросы в этом формате.
-    """
+    """Модель запроса на создание заявки."""
+
     user_id: int = Field(gt=0, description="ID пользователя")
     permission_type: Literal["access", "group"] = Field(description="Тип права: access или group")
     item_id: int = Field(gt=0, description="ID доступа или группы")
 
 
 class RequestAccessOut(BaseModel):
-    """***ВАЖНО для BFF Service***: Модель ответа при создании заявки.
-    
-    BFF получает этот ответ от User Service и передаёт клиенту. Поле ``request_id``
-    используется для отслеживания статуса заявки (клиент может проверить статус через
-    GET /users/{user_id}/permissions).
-    """
+    """Модель ответа при создании заявки."""
+
     status: str = Field(default="accepted", description="Статус обработки заявки")
     request_id: str = Field(description="UUID заявки для отслеживания")
 
 
 class RevokePermissionIn(BaseModel):
+    """Модель запроса на отзыв права у пользователя."""
+
     permission_type: Literal["access", "group"] = Field(description="Тип права")
     item_id: int = Field(gt=0, description="ID доступа или группы")
 
 
 class RevokePermissionOut(BaseModel):
+    """Модель ответа при отзыве права у пользователя."""
+
     status: str = Field(default="revoked", description="Статус отзыва права")
 
 
 class PermissionOut(BaseModel):
-    """Модель для отдельного права с деталями.
-    
-    ***ВАЖНО для BFF Service***: Используется в ``GetUserPermissionsOut`` для представления
-    отдельного права (доступа или группы). Поле ``status`` может быть: "active", "pending",
-    "revoked", "rejected". Поле ``item_name`` содержит название доступа/группы из Access Control
-    Service (может быть None, если не заполнено).
-    """
+    """Модель для отдельного права с деталями."""
+
     id: int
     permission_type: Literal["access", "group"]
     item_id: int
@@ -75,13 +64,8 @@ class PermissionOut(BaseModel):
 
 
 class GetUserPermissionsOut(BaseModel):
-    """Модель для получения всех прав пользователя.
-    
-    ***ВАЖНО для BFF Service***: BFF использует этот формат ответа для отображения прав
-    пользователя клиенту. Поля ``groups`` и ``accesses`` содержат списки прав, разделённые
-    по типу. Каждый элемент содержит полную информацию о праве (id, type, item_id, item_name,
-    status, assigned_at).
-    """
+    """Модель для получения всех прав пользователя."""
+
     user_id: int
     groups: list[PermissionOut] = Field(default_factory=list)
     accesses: list[PermissionOut] = Field(default_factory=list)
@@ -94,12 +78,8 @@ class ActiveGroup(BaseModel):
 
 
 class GetActiveGroupsOut(BaseModel):
-    """Модель для получения активных групп (для Validation Service) - список групп.
+    """Модель для получения активных групп (для Validation Service) - список групп."""
     
-    ***ВАЖНО для Validation Service***: Validation Service использует этот формат для получения
-    активных групп пользователя при проверке конфликтов. Формат: ``{"groups": [{"id": int, "name": str}, ...]}``.
-    Возвращаются только группы со статусом ``active``.
-    """
     groups: list[ActiveGroup] = Field(default_factory=list)
 
 

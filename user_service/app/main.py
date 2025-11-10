@@ -3,13 +3,28 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import asyncio
 import logging
+import sys
 
 from user_service.app.routes import permissions, health, admin
 from user_service.db.database import db
 from user_service.services.redis_client import redis_client
 from user_service.services.rabbitmq_manager import rabbitmq_manager
 from user_service.services.result_consumer import result_consumer
-import user_service.db  # noqa: F401
+from user_service.config.settings import get_settings
+
+settings = get_settings()
+log_level = getattr(logging, settings.log_level.upper(), logging.INFO)
+logging.basicConfig(
+    level=log_level,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ],
+    force=True
+)
+
+logging.getLogger("aio_pika").setLevel(logging.WARNING)
+logging.getLogger("redis").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 

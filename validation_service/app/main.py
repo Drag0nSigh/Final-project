@@ -6,13 +6,13 @@
 
 import asyncio
 import logging
+import sys
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
 import httpx
 
 from validation_service.config.settings import Settings
-from validation_service.app.utils.logger import setup_logging
 from validation_service.services.redis_cache import RedisCache
 from validation_service.services.user_service_client import UserServiceClient
 from validation_service.services.access_control_client import AccessControlClient
@@ -28,58 +28,51 @@ validation_service: ValidationService = None
 publisher: ResultPublisher = None
 consumer: ValidationConsumer = None
 consumer_task: asyncio.Task = None
-settings: Settings = None
+
+settings = Settings()
+log_level = getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO)
+logging.basicConfig(
+    level=log_level,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ],
+    force=True
+)
+
+logging.getLogger("aio_pika").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("redis").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Управление жизненным циклом приложения
-    
-    Startup:
-    1. Инициализация Redis кэша
-    2. Инициализация HTTP клиентов (UserServiceClient, AccessControlClient)
-    3. Инициализация ValidationService
-    4. Инициализация ResultPublisher
-    5. Инициализация ValidationConsumer
-    6. Запуск consumer в фоне
-    
-    Shutdown:
-    1. Остановка consumer
-    2. Закрытие publisher
-    3. Закрытие HTTP клиентов
-    4. Закрытие Redis
-    """
+    """Управление жизненным циклом приложения"""
+
     global cache, user_client, access_control_client
     global validation_service, publisher, consumer, consumer_task, settings
     
-    logger.info("Запуск Validation Service...")
+    logger.debug("Запуск Validation Service...")
     
     try:
-        try:
-            settings = Settings()
-            setup_logging("validation-service", settings.LOG_LEVEL)
-            logger.info(f"Настройки загружены, уровень логирования: {settings.LOG_LEVEL}")
-        except Exception as e:
-            logger.exception(f"Ошибка загрузки настроек: {e}")
-            raise
+        logger.debug(f"Настройки загружены, уровень логирования: {settings.LOG_LEVEL}")
         
         try:
-            logger.info("Инициализация Redis кэша...")
+            logger.debug("Инициализация Redis кэша...")
             cache = RedisCache(
                 redis_host=settings.REDIS_HOST,
                 redis_port=settings.REDIS_PORT
             )
             await cache.connect()
-            logger.info("Redis кэш подключен")
+            logger.debug("Redis кэш подключен")
         except Exception as e:
             logger.exception(f"Ошибка инициализации Redis кэша: {e}")
             raise
         
         try:
-            logger.info("Инициализация HTTP клиентов...")
+            logger.debug("Инициализация HTTP клиентов...")
             user_client = UserServiceClient(
                 base_url=settings.USER_SERVICE_URL,
                 cache=cache,
@@ -90,36 +83,36 @@ async def lifespan(app: FastAPI):
                 cache=cache,
                 timeout=settings.HTTP_TIMEOUT
             )
-            logger.info("HTTP клиенты инициализированы")
+            logger.debug("HTTP клиенты инициализированы")
         except Exception as e:
             logger.exception(f"Ошибка инициализации HTTP клиентов: {e}")
             raise
         
         try:
-            logger.info("Инициализация ValidationService...")
+            logger.debug("Инициализация ValidationService...")
             validation_service = ValidationService(
                 user_client=user_client,
                 access_control_client=access_control_client
             )
-            logger.info("ValidationService инициализирован")
+            logger.debug("ValidationService инициализирован")
         except Exception as e:
             logger.exception(f"Ошибка инициализации ValidationService: {e}")
             raise
         
         try:
-            logger.info("Инициализация ResultPublisher...")
+            logger.debug("Инициализация ResultPublisher...")
             publisher = ResultPublisher(
                 rabbitmq_url=settings.rabbitmq_url,
                 result_queue_name=settings.RESULT_QUEUE
             )
             await publisher.connect()
-            logger.info("ResultPublisher подключен")
+            logger.debug("ResultPublisher подключен")
         except Exception as e:
             logger.exception(f"Ошибка инициализации ResultPublisher: {e}")
             raise
         
         try:
-            logger.info("Инициализация ValidationConsumer...")
+            logger.debug("Инициализация ValidationConsumer...")
             consumer = ValidationConsumer(
                 validation_service=validation_service,
                 publisher=publisher,
@@ -127,15 +120,15 @@ async def lifespan(app: FastAPI):
                 validation_queue_name=settings.VALIDATION_QUEUE
             )
             await consumer.connect()
-            logger.info("ValidationConsumer подключен")
+            logger.debug("ValidationConsumer подключен")
         except Exception as e:
             logger.exception(f"Ошибка инициализации ValidationConsumer: {e}")
             raise
         
         try:
-            logger.info("Запуск ValidationConsumer в фоновом режиме...")
+            logger.debug("Запуск ValidationConsumer в фоновом режиме...")
             consumer_task = asyncio.create_task(consumer.start_consuming())
-            logger.info("Validation Service запущен и готов к работе")
+            logger.debug("Validation Service запущен и готов к работе")
         except Exception as e:
             logger.exception(f"Ошибка запуска ValidationConsumer: {e}")
             raise
@@ -146,11 +139,11 @@ async def lifespan(app: FastAPI):
     
     yield
     
-    logger.info("Остановка Validation Service...")
+    logger.debug("Остановка Validation Service...")
     
     if consumer_task and not consumer_task.done():
         try:
-            logger.info("Остановка ValidationConsumer...")
+            logger.debug("Остановка ValidationConsumer...")
             consumer._consuming = False
             consumer_task.cancel()
             try:
@@ -159,46 +152,44 @@ async def lifespan(app: FastAPI):
                 pass
             if consumer:
                 await consumer.close()
-            logger.info("ValidationConsumer остановлен")
+            logger.debug("ValidationConsumer остановлен")
         except Exception as e:
             logger.exception(f"Ошибка при остановке ValidationConsumer: {e}")
     
     if publisher:
         try:
-            logger.info("Закрытие ResultPublisher...")
+            logger.debug("Закрытие ResultPublisher...")
             await publisher.close()
-            logger.info("ResultPublisher закрыт")
+            logger.debug("ResultPublisher закрыт")
         except Exception as e:
             logger.exception(f"Ошибка при закрытии ResultPublisher: {e}")
     
     if user_client:
         try:
-            logger.info("Закрытие UserServiceClient...")
+            logger.debug("Закрытие UserServiceClient...")
             await user_client.close()
         except Exception as e:
             logger.exception(f"Ошибка при закрытии UserServiceClient: {e}")
     
     if access_control_client:
         try:
-            logger.info("Закрытие AccessControlClient...")
+            logger.debug("Закрытие AccessControlClient...")
             await access_control_client.close()
         except Exception as e:
             logger.exception(f"Ошибка при закрытии AccessControlClient: {e}")
     
-    logger.info("HTTP клиенты закрыты")
+    logger.debug("HTTP клиенты закрыты")
     
     if cache:
         try:
-            logger.info("Закрытие Redis кэша...")
+            logger.debug("Закрытие Redis кэша...")
             await cache.close()
-            logger.info("Redis кэш закрыт")
+            logger.debug("Redis кэш закрыт")
         except Exception as e:
             logger.exception(f"Ошибка при закрытии Redis кэша: {e}")
     
-    logger.info("Validation Service остановлен")
+    logger.debug("Validation Service остановлен")
 
-
-setup_logging("validation-service", "INFO")
 
 app = FastAPI(
     title="Validation Service",

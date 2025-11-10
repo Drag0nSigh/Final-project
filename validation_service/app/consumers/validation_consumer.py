@@ -1,10 +1,3 @@
-"""
-Consumer для обработки запросов на валидацию из RabbitMQ
-
-Получает сообщения из validation_queue, обрабатывает их через ValidationService
-и отправляет результаты через ResultPublisher.
-"""
-
 import json
 import logging
 from typing import Optional

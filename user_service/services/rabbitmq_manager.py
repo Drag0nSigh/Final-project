@@ -60,7 +60,7 @@ class RabbitMQManager:
 
         try:
             rabbitmq_url = self._settings.build_rabbitmq_url()
-            logger.info(f"Подключение к RabbitMQ: {self._settings.rabbitmq_host}:{self._settings.rabbitmq_port}")
+            logger.debug(f"Подключение к RabbitMQ: {self._settings.rabbitmq_host}:{self._settings.rabbitmq_port}")
 
             self._connection = await aio_pika.connect_robust(rabbitmq_url)
             self._channel = await self._connection.channel()
@@ -71,7 +71,7 @@ class RabbitMQManager:
                 validation_queue_name,
                 durable=True,
             )
-            logger.info(f"Очередь объявлена: {validation_queue_name}")
+            logger.debug(f"Очередь объявлена: {validation_queue_name}")
 
             # Объявление очереди result_queue (для получения результатов валидации)
             result_queue_name = self._settings.rabbitmq_result_queue
@@ -79,13 +79,12 @@ class RabbitMQManager:
                 result_queue_name,
                 durable=True,
             )
-            logger.info(f"Очередь объявлена: {result_queue_name}")
+            logger.debug(f"Очередь объявлена: {result_queue_name}")
 
-            logger.info("RabbitMQ менеджер успешно подключён, все очереди объявлены")
+            logger.debug("RabbitMQ менеджер успешно подключён, все очереди объявлены")
 
         except Exception as exc:
             logger.exception("Ошибка при подключении к RabbitMQ или объявлении очередей")
-            # Очищаем состояние при ошибке
             await self._cleanup()
             raise
 
@@ -122,30 +121,16 @@ class RabbitMQManager:
         item_id: int,
         request_id: str,
     ) -> None:
-        """Публикует запрос на валидацию в очередь `validation_queue`.
-
-        ***ВАЖНО для Validation Service***: Формирует сообщение в формате, ожидаемом Validation Service.
-        Формат JSON-сообщения: ``{"user_id": int, "permission_type": "access"|"group", "item_id": int, "request_id": str}``.
-        Очередь: ``validation_queue``. Сообщение публикуется с флагом ``delivery_mode=PERSISTENT``,
-        чтобы оно сохранялось при перезапуске RabbitMQ. Validation Service должен ожидать именно
-        этот формат сообщения.
-        """
+        """Публикует запрос на валидацию в очередь `validation_queue`."""
 
         if not self.is_connected or not self._channel:
-            logger.error("Попытка публикации при отсутствии подключения к RabbitMQ")
             raise RuntimeError("RabbitMQ не подключён. Вызовите connect() сначала.")
 
         if not self._validation_queue:
-            logger.error("Очередь validation_queue не объявлена")
             raise RuntimeError("Очередь validation_queue не объявлена")
 
         try:
-            # ***ВАЖНО для Validation Service***: Формируем сообщение в формате ValidationRequest.
-            # Validation Service должен ожидать именно эти поля в JSON:
-            # - user_id (int): ID пользователя
-            # - permission_type (str): "access" или "group"
-            # - item_id (int): ID доступа или группы
-            # - request_id (str): UUID заявки
+
             message_data = {
                 "user_id": user_id,
                 "permission_type": permission_type,
@@ -154,7 +139,6 @@ class RabbitMQManager:
             }
             message_body = json.dumps(message_data).encode("utf-8")
 
-            # Публикуем сообщение в очередь
             await self._channel.default_exchange.publish(
                 aio_pika.Message(
                     message_body,
@@ -163,19 +147,14 @@ class RabbitMQManager:
                 routing_key=self._settings.rabbitmq_validation_queue,
             )
 
-            logger.info(
-                "Запрос на валидацию опубликован в очередь: request_id=%s, user_id=%s, "
-                "permission_type=%s, item_id=%s",
-                request_id,
-                user_id,
-                permission_type,
-                item_id,
+            logger.debug(
+                f"Запрос на валидацию опубликован в очередь: request_id={request_id}, user_id={user_id}, "
+                f"permission_type={permission_type}, item_id={item_id}"
             )
 
         except Exception as exc:
             logger.exception(
-                "Ошибка при публикации запроса на валидацию: request_id=%s",
-                request_id,
+                f"Ошибка при публикации запроса на валидацию: request_id={request_id}"
             )
             raise
 

@@ -10,6 +10,5 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, nullable=False, index=True)
     
-    # Связь с правами пользователя
     permissions = relationship("UserPermission", back_populates="user", cascade="all, delete-orphan")
 

@@ -21,7 +21,6 @@ class Group(Base):
     
     accesses = relationship("Access", secondary="group_accesses", back_populates="groups")
     
-    # Связи для конфликтов (через конфликтную таблицу)
     conflicts_as_group1 = relationship(
         "Conflict",
         foreign_keys="Conflict.group_id1",

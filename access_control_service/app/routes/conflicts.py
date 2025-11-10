@@ -1,53 +1,45 @@
-from fastapi import APIRouter, Depends, HTTPException
+import logging
+import redis.asyncio as redis
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from access_control_service.db.database import db
-from access_control_service.models.models import (
-    CreateConflictIn,
-    CreateConflictOut,
-    Conflict as ConflictOut,
-    GetConflictsOut
-)
+from access_control_service.app.dependencies import get_redis_connection
+from access_control_service.models.models import GetConflictsOut, Conflict
 from access_control_service.services.conflict_service import ConflictService
+from access_control_service.services.cache import (
+    get_conflicts_matrix_from_cache,
+    set_conflicts_matrix_cache
+)
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
-
-
-@router.post("", response_model=list[CreateConflictOut], status_code=201)
-async def create_conflict(
-    conflict_in: CreateConflictIn,
-    session: AsyncSession = Depends(db.get_db)
-):
-    """Создание конфликта между группами (служебный эндпоинт).
-    
-    Автоматически создает симметричную пару (group1,group2) и (group2,group1)
-    """
-    pass
 
 
 @router.get("", response_model=GetConflictsOut)
 async def get_all_conflicts(
-    session: AsyncSession = Depends(db.get_db)
+    session: AsyncSession = Depends(db.get_db),
+    redis_conn: redis.Redis = Depends(get_redis_connection)
 ):
-    """Получение всех конфликтов (для Validation Service)"""
-    pass
-
-
-@router.get("/{group_id}", response_model=list[ConflictOut])
-async def get_conflicts_by_group(
-    group_id: int,
-    session: AsyncSession = Depends(db.get_db)
-):
-    """Получение конфликтов для конкретной группы"""
-    pass
-
-
-@router.delete("", status_code=204)
-async def delete_conflict(
-    group_id1: int,
-    group_id2: int,
-    session: AsyncSession = Depends(db.get_db)
-):
-    """Удаление конфликта между группами"""
-    pass
+    """Получение всех конфликтов"""
+    try:
+        cached_conflicts = await get_conflicts_matrix_from_cache(redis_conn)
+        if cached_conflicts is not None:
+            conflicts = [
+                Conflict.model_validate(conflict_dict)
+                for conflict_dict in cached_conflicts
+            ]
+            return GetConflictsOut(conflicts=conflicts)
+        
+        conflicts_list = await ConflictService.get_all_conflicts(session)
+        
+        conflicts_dict = [conflict.model_dump() for conflict in conflicts_list]
+        await set_conflicts_matrix_cache(redis_conn, conflicts_dict)
+        
+        return GetConflictsOut(conflicts=conflicts_list)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка при получении конфликтов: {str(exc)}"
+        )
 

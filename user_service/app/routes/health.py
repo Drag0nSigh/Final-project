@@ -37,7 +37,7 @@ async def readiness_check():
         else:
             async with db.engine.connect() as conn:
                 result = await conn.execute(text("SELECT 1"))
-                result.scalar()  # Проверяем, что запрос выполнился
+                result.scalar()
             checks["db"] = "ok"
     except Exception as exc:
         checks["db"] = f"error: {str(exc)}"

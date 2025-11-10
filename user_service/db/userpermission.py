@@ -17,10 +17,8 @@ class UserPermission(Base):
     request_id = Column(String(36), nullable=False, unique=True, index=True)  # UUID для трекинга
     assigned_at = Column(DateTime, default=datetime.utcnow, nullable=True)
     
-    # Связь с пользователем
     user = relationship("User", back_populates="permissions")
     
-    # Предотвращение дублей: один пользователь не может иметь два одинаковых права
     __table_args__ = (
         UniqueConstraint('user_id', 'permission_type', 'item_id', name='unique_user_permission'),
     )
