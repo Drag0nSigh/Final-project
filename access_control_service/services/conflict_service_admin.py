@@ -31,12 +31,11 @@ class ConflictServiceAdmin:
             f"Создание конфликта: group_id1={group_id1}, group_id2={group_id2}"
         )
 
-        stmt = select(Group).where(Group.id.in_([group_id1, group_id2]))
+        stmt = select(Group.id).where(Group.id.in_([group_id1, group_id2]))
         result = await session.execute(stmt)
-        existing_groups = result.scalars().all()
-        existing_group_ids = {g.id for g in existing_groups}
+        existing_ids = set(result.scalars().all())
 
-        missing_ids = {group_id1, group_id2} - existing_group_ids
+        missing_ids = {group_id1, group_id2} - existing_ids
         if missing_ids:
             raise ValueError(f"Группы с ID {sorted(missing_ids)} не найдены")
 

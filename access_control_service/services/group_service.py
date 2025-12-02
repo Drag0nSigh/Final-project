@@ -30,12 +30,11 @@ class GroupService:
         )
 
         if group_data.access_ids:
-            stmt = select(Access).where(Access.id.in_(group_data.access_ids))
+            stmt = select(Access.id).where(Access.id.in_(group_data.access_ids))
             result = await session.execute(stmt)
-            existing_accesses = result.scalars().all()
-            existing_access_ids = {a.id for a in existing_accesses}
+            existing_ids = set(result.scalars().all())
 
-            missing_ids = set(group_data.access_ids) - existing_access_ids
+            missing_ids = set(group_data.access_ids) - existing_ids
             if missing_ids:
                 raise ValueError(
                     f"Доступы с ID {sorted(missing_ids)} не найдены"

@@ -32,12 +32,11 @@ class AccessService:
         )
 
         if access_data.resource_ids:
-            stmt = select(Resource).where(Resource.id.in_(access_data.resource_ids))
+            stmt = select(Resource.id).where(Resource.id.in_(access_data.resource_ids))
             result = await session.execute(stmt)
-            existing_resources = result.scalars().all()
-            existing_resource_ids = {r.id for r in existing_resources}
+            existing_ids = set(result.scalars().all())
 
-            missing_ids = set(access_data.resource_ids) - existing_resource_ids
+            missing_ids = set(access_data.resource_ids) - existing_ids
             if missing_ids:
                 raise ValueError(
                     f"Ресурсы с ID {sorted(missing_ids)} не найдены"
