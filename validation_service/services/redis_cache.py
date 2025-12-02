@@ -7,10 +7,8 @@ Redis кэш для Validation Service
 import json
 import logging
 from typing import Optional, Any
-try:
-    from redis import asyncio as redis
-except ImportError:
-    import redis.asyncio as redis
+
+import redis.asyncio as redis
 
 logger = logging.getLogger(__name__)
 

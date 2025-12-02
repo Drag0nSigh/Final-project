@@ -2,13 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-try:
-    import redis.asyncio as redis
-except ImportError as import_error:
-    raise ImportError(
-        "Не удалось импортировать redis.asyncio. Убедитесь, что пакет 'redis' "
-        "установлен (см. user_service/requirements.txt)."
-    ) from import_error
+import redis.asyncio as redis
 
 from user_service.config.settings import get_settings
 
