@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import Literal
 from datetime import datetime
 from pydantic import BaseModel, Field
 
@@ -35,9 +35,9 @@ class PermissionOut(BaseModel):
     id: int
     permission_type: Literal["access", "group"]
     item_id: int
-    item_name: Optional[str] = None  # Название доступа/группы (опционально)
+    item_name: str | None = None  # Название доступа/группы (опционально)
     status: str
-    assigned_at: Optional[datetime] = None
+    assigned_at: datetime | None = None
 
 
 class GetUserPermissionsOut(BaseModel):
@@ -56,7 +56,7 @@ class UserPermissionOut(BaseModel):
     item_id: int
     status: Literal["active", "pending", "revoked", "rejected"]
     request_id: str
-    assigned_at: Optional[datetime] = None
+    assigned_at: datetime | None = None
 
 
 class Resource(BaseModel):
@@ -64,7 +64,7 @@ class Resource(BaseModel):
     id: int
     name: str
     type: str
-    description: Optional[str] = None
+    description: str | None = None
 
 
 class Access(BaseModel):

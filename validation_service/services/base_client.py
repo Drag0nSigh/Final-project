@@ -5,7 +5,7 @@
 """
 
 import logging
-from typing import Any, Optional, Callable, Awaitable
+from typing import Any, Callable, Awaitable
 import httpx
 
 from validation_service.services.redis_cache import RedisCache
@@ -19,7 +19,7 @@ class BaseServiceClient:
     def __init__(
         self,
         base_url: str,
-        cache: Optional[RedisCache] = None,
+        cache: RedisCache | None = None,
         timeout: float = 30.0
     ):
         """Инициализация базового клиента"""
@@ -37,10 +37,10 @@ class BaseServiceClient:
     async def _get_from_cache(
         self,
         cache_key: str,
-        response_key: Optional[str] = None,
+        response_key: str | None = None,
         use_cache: bool = True,
-        cache_log_message: Optional[str] = None
-    ) -> Optional[Any]:
+        cache_log_message: str | None = None
+    ) -> Any | None:
         """Получить данные из кэша"""
         
         if use_cache and self.cache:
@@ -59,10 +59,10 @@ class BaseServiceClient:
         self,
         cache_key: str,
         data: Any,
-        response_key: Optional[str] = None,
+        response_key: str | None = None,
         ttl: int = 3600,
         use_cache: bool = True,
-        cache_log_message: Optional[str] = None
+        cache_log_message: str | None = None
     ) -> None:
         """Сохранить данные в кэш"""
         
@@ -84,7 +84,7 @@ class BaseServiceClient:
     async def _invalidate_cache(
         self,
         cache_key: str,
-        log_message: Optional[str] = None
+        log_message: str | None = None
     ) -> None:
         """Инвалидировать кэш по ключу"""
         
@@ -96,7 +96,7 @@ class BaseServiceClient:
     async def _get_json_data(
         self,
         path: str,
-        response_key: Optional[str] = None,
+        response_key: str | None = None,
         default: Any = []
     ) -> Any:
         """Выполнить GET запрос и извлечь данные из JSON ответа"""
@@ -115,9 +115,9 @@ class BaseServiceClient:
         cache_key: str,
         fetch_func: Callable[[], Awaitable[Any]],
         ttl: int,
-        response_key: Optional[str] = None,
+        response_key: str | None = None,
         use_cache: bool = True,
-        cache_log_message: Optional[str] = None
+        cache_log_message: str | None = None
     ) -> Any:
         """Универсальный метод для запроса с кэшированием"""
 

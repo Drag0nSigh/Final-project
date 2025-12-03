@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional
+from typing import Any
 import httpx
 
 from validation_service.models.validation_models import (
@@ -156,7 +156,7 @@ class ValidationService:
         user_group_ids: list[int],
         new_group_ids: list[int],
         conflicts: list[dict[str, int]]
-    ) -> tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """Проверить конфликты между группами"""
         
         if not user_group_ids or not new_group_ids:

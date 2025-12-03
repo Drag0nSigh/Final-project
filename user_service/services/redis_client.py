@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 import redis.asyncio as redis
 
@@ -11,7 +11,7 @@ class RedisClient:
 
     def __init__(self) -> None:
         self._settings = get_settings()
-        self._connection: Optional[redis.Redis[Any]] = None
+        self._connection: redis.Redis[Any] | None = None
 
     @property
     def connection(self) -> redis.Redis[Any]:

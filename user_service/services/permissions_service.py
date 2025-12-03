@@ -3,9 +3,10 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Literal, Optional
+from typing import Literal, Any
 from datetime import datetime
 
+import redis.asyncio as redis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,6 +23,8 @@ from user_service.services.dto import (
     permissions_to_active_groups_schema,
 )
 from user_service.models.models import (
+    RequestAccessIn,
+    RequestAccessOut,
     GetUserPermissionsOut,
     GetActiveGroupsOut,
     ActiveGroup,
@@ -33,10 +36,58 @@ class PermissionService:
     """Инкапсулирует бизнес-логику управления правами пользователя."""
 
     session: AsyncSession
-    redis_conn: Optional[object] = None  # redis.Redis[Any]; точный тип зададим позже
+    redis_conn: redis.Redis[Any] | None = None
 
-    async def create_request(self, *args, **kwargs):  # pragma: no cover - заглушка
-        raise NotImplementedError
+    async def create_request(
+        self,
+        request_data: RequestAccessIn,
+    ) -> RequestAccessOut:
+        """Создание заявки на получение доступа или группы прав."""
+        
+        from uuid import uuid4
+        
+        logger.debug(
+            f"Создание заявки: user={request_data.user_id} "
+            f"permission_type={request_data.permission_type} item_id={request_data.item_id}"
+        )
+        
+        stmt = select(UserPermission).where(
+            UserPermission.user_id == request_data.user_id,
+            UserPermission.permission_type == request_data.permission_type,
+            UserPermission.item_id == request_data.item_id,
+        )
+        result = await self.session.execute(stmt)
+        existing_permission = result.scalar_one_or_none()
+        
+        if existing_permission and existing_permission.status in {"active", "pending"}:
+            raise ValueError("Заявка уже находится в обработке или право активно")
+        
+        new_request_id = str(uuid4())
+        
+        if existing_permission and existing_permission.status in {"revoked", "rejected"}:
+            existing_permission.status = "pending"
+            existing_permission.request_id = new_request_id
+            existing_permission.assigned_at = None
+            logger.debug(
+                f"Повторное использование заявки {new_request_id}: статус переведён в pending"
+            )
+        else:
+            permission_record = UserPermission(
+                user_id=request_data.user_id,
+                permission_type=request_data.permission_type,
+                item_id=request_data.item_id,
+                item_name=None,
+                status="pending",
+                request_id=new_request_id,
+                assigned_at=None,
+            )
+            self.session.add(permission_record)
+            logger.debug(f"Создана новая заявка {new_request_id}")
+        
+        await self.session.flush()
+        
+        logger.debug(f"Заявка {new_request_id} успешно создана")
+        return RequestAccessOut(status="accepted", request_id=new_request_id)
 
     async def get_permissions(self, user_id: int) -> GetUserPermissionsOut:
         """Возвращает все права пользователя, разделяя их на группы и доступы."""
@@ -93,7 +144,7 @@ class PermissionService:
         user_id: int,
         permission_type: Literal["access", "group"],
         item_id: int,
-    ) -> Optional[UserPermission]:
+    ) -> UserPermission | None:
         """Применяет результат валидации к заявке пользователя."""
 
         stmt = select(UserPermission).where(UserPermission.request_id == request_id)
@@ -134,7 +185,7 @@ class PermissionService:
         user_id: int,
         permission_type: Literal["access", "group"],
         item_id: int,
-    ) -> Optional[UserPermission]:
+    ) -> UserPermission | None:
         """Переводит право пользователя в статус ``revoked`` и очищает кэш."""
 
         stmt = select(UserPermission).where(

@@ -6,7 +6,7 @@
 """
 
 import logging
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Tuple
 import httpx
 
 from validation_service.models.validation_models import (
@@ -187,7 +187,7 @@ class ValidationService:
         user_group_ids: List[int],
         new_group_ids: List[int],
         conflicts: List[Dict[str, int]]
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> Tuple[bool, str | None]:
         """
         Проверить конфликты между группами
         

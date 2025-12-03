@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 import json
 
 import redis.asyncio as redis
@@ -20,7 +20,7 @@ def _build_user_groups_key(user_id: int) -> str:
 async def get_user_groups_from_cache(
     redis_conn: redis.Redis[Any],
     user_id: int,
-) -> Optional[list[dict[str, Any]]]:
+) -> list[dict[str, Any]] | None:
     """Пытается получить активные группы пользователя из кэша."""
 
     key = _build_user_groups_key(user_id)

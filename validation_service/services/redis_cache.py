@@ -6,7 +6,7 @@ Redis кэш для Validation Service
 
 import json
 import logging
-from typing import Optional, Any
+from typing import Any
 
 import redis.asyncio as redis
 
@@ -20,7 +20,7 @@ class RedisCache:
         """Инициализация Redis клиента"""
         self.redis_host = redis_host
         self.redis_port = redis_port
-        self.client: Optional[redis.Redis] = None
+        self.client: redis.Redis | None = None
     
     async def connect(self):
         """Подключение к Redis"""
@@ -42,7 +42,7 @@ class RedisCache:
             await self.client.close()
             logger.info("Подключение к Redis закрыто")
     
-    async def get(self, key: str) -> Optional[str]:
+    async def get(self, key: str) -> str | None:
         """Получить значение из кэша"""
 
         if not self.client:
@@ -77,7 +77,7 @@ class RedisCache:
         except Exception as e:
             logger.error(f"Error deleting cache key {key}: {e}")
     
-    async def get_json(self, key: str) -> Optional[Any]:
+    async def get_json(self, key: str) -> Any | None:
         """Получить JSON значение из кэша"""
 
         value = await self.get(key)

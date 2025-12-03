@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import Literal
 from pydantic import BaseModel, Field, ConfigDict
 
 
@@ -29,7 +29,7 @@ class ValidationResult(BaseModel):
     
     request_id: str = Field(description="UUID заявки")
     approved: bool = Field(description="Одобрено или отклонено")
-    reason: Optional[str] = Field(
+    reason: str | None = Field(
         default=None,
         description="Причина отклонения (если approved=False)"
     )

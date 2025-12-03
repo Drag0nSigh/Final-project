@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional
+from typing import Any
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from validation_service.services.base_client import BaseServiceClient
@@ -14,7 +14,7 @@ class UserServiceClient(BaseServiceClient):
     def __init__(
         self,
         base_url: str,
-        cache: Optional[Any] = None,
+        cache: Any | None = None,
         timeout: float = 30.0
     ):
         """Инициализация клиента"""

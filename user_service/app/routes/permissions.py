@@ -1,9 +1,7 @@
 import logging
 
 from fastapi import APIRouter, HTTPException, status, Depends
-from uuid import uuid4
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from user_service.models.models import (
@@ -15,7 +13,6 @@ from user_service.models.models import (
     GetActiveGroupsOut,
 )
 from user_service.db.database import db
-from user_service.db.userpermission import UserPermission
 from user_service.app.dependencies import (
     get_settings_dependency,
     get_rabbitmq_manager_dependency,
@@ -46,63 +43,33 @@ async def request_access(
         f"Получен запрос на создание заявки: user={request.user_id} permission_type={request.permission_type} item_id={request.item_id}"
     )
 
-    stmt = select(UserPermission).where(
-        UserPermission.user_id == request.user_id,
-        UserPermission.permission_type == request.permission_type,
-        UserPermission.item_id == request.item_id,
-    )
-    result = await session.execute(stmt)
-    existing_permission = result.scalar_one_or_none()
-
-    if existing_permission and existing_permission.status in {"active", "pending"}:
-
+    service = PermissionService(session=session)
+    
+    try:
+        result = await service.create_request(request)
+    except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Заявка уже находится в обработке или право активно",
-        )
-
-    new_request_id = str(uuid4())
-
-    if existing_permission and existing_permission.status in {"revoked", "rejected"}:
-        existing_permission.status = "pending"
-        existing_permission.request_id = new_request_id
-        existing_permission.assigned_at = None
-        permission_record = existing_permission
-        logger.debug(
-            f"Повторное использование заявки {new_request_id}: статус переведён в pending"
-        )
-    else:
-        permission_record = UserPermission(
-            user_id=request.user_id,
-            permission_type=request.permission_type,
-            item_id=request.item_id,
-            item_name=None,
-            status="pending",
-            request_id=new_request_id,
-            assigned_at=None,
-        )
-        session.add(permission_record)
-        logger.debug(f"Создана новая заявка {new_request_id}")
-
-    await session.flush()
+            detail=str(exc),
+        ) from exc
 
     try:
         await rabbitmq.publish_validation_request(
             user_id=request.user_id,
             permission_type=request.permission_type,
             item_id=request.item_id,
-            request_id=new_request_id,
+            request_id=result.request_id,
         )
     except Exception as exc:
         # Если публикация не удалась, логируем ошибку, но не прерываем обработку:
         # заявка уже создана в БД, её можно будет обработать позже (например, через
         # повторную публикацию или ручной запуск валидации).
         logger.exception(
-            f"Не удалось опубликовать запрос на валидацию в RabbitMQ: request_id={new_request_id}"
+            f"Не удалось опубликовать запрос на валидацию в RabbitMQ: request_id={result.request_id}"
         )
 
-    logger.debug(f"Заявка {new_request_id} успешно принята и отправлена на валидацию")
-    return RequestAccessOut(status="accepted", request_id=new_request_id)
+    logger.debug(f"Заявка {result.request_id} успешно принята и отправлена на валидацию")
+    return result
 
 
 @router.delete("/users/{user_id}/permissions", response_model=RevokePermissionOut)

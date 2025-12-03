@@ -1,6 +1,5 @@
 import json
 import logging
-from typing import Optional
 import aio_pika
 from aio_pika.abc import AbstractConnection, AbstractChannel
 
@@ -30,9 +29,9 @@ class ValidationConsumer:
         self.publisher = publisher
         self.rabbitmq_url = rabbitmq_url
         self.validation_queue_name = validation_queue_name
-        self.connection: Optional[AbstractConnection] = None
-        self.channel: Optional[AbstractChannel] = None
-        self.queue: Optional[aio_pika.abc.AbstractQueue] = None
+        self.connection: AbstractConnection | None = None
+        self.channel: AbstractChannel | None = None
+        self.queue: aio_pika.abc.AbstractQueue | None = None
         self._consuming = False
     
     async def connect(self):

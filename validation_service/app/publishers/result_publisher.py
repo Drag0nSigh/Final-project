@@ -5,7 +5,6 @@ Publisher для отправки результатов валидации в R
 """
 
 import logging
-from typing import Optional
 import aio_pika
 from aio_pika.abc import AbstractConnection, AbstractChannel
 
@@ -26,9 +25,9 @@ class ResultPublisher:
 
         self.rabbitmq_url = rabbitmq_url
         self.result_queue_name = result_queue_name
-        self.connection: Optional[AbstractConnection] = None
-        self.channel: Optional[AbstractChannel] = None
-        self.queue: Optional[aio_pika.abc.AbstractQueue] = None
+        self.connection: AbstractConnection | None = None
+        self.channel: AbstractChannel | None = None
+        self.queue: aio_pika.abc.AbstractQueue | None = None
     
     async def connect(self):
         """Подключение к RabbitMQ"""

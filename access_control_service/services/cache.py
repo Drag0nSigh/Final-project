@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 import json
 import logging
 
@@ -16,7 +16,7 @@ CONFLICTS_MATRIX_KEY = "conflicts:matrix"
 
 async def get_conflicts_matrix_from_cache(
     redis_conn: redis.Redis[Any],
-) -> Optional[list[dict[str, int]]]:
+) -> list[dict[str, int]] | None:
     """Пытается получить матрицу конфликтов из кэша."""
 
     cached_value = await redis_conn.get(CONFLICTS_MATRIX_KEY)
@@ -74,7 +74,7 @@ def _build_group_accesses_key(group_id: int) -> str:
 async def get_group_accesses_from_cache(
     redis_conn: redis.Redis[Any],
     group_id: int,
-) -> Optional[list[dict[str, Any]]]:
+) -> list[dict[str, Any]] | None:
     """Пытается получить доступы группы из кэша."""
 
     key = _build_group_accesses_key(group_id)
@@ -131,7 +131,7 @@ def _build_access_groups_key(access_id: int) -> str:
 async def get_access_groups_from_cache(
     redis_conn: redis.Redis[Any],
     access_id: int,
-) -> Optional[list[dict[str, Any]]]:
+) -> list[dict[str, Any]] | None:
     """Пытается получить группы по доступу из кэша."""
 
     key = _build_access_groups_key(access_id)

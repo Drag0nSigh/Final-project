@@ -1,4 +1,4 @@
-from typing import Optional, Literal
+from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -9,7 +9,7 @@ class Resource(BaseModel):
     id: int
     name: str
     type: str
-    description: Optional[str] = None
+    description: str | None = None
 
 
 class Access(BaseModel):
@@ -40,7 +40,7 @@ class CreateResourceIn(BaseModel):
     """Модель для создания ресурса"""
     name: str = Field(..., min_length=1, max_length=100, description="Название ресурса")
     type: Literal["API", "Database", "Service"] = Field(..., description="Тип ресурса")
-    description: Optional[str] = Field(None, description="Описание ресурса")
+    description: str | None = Field(None, description="Описание ресурса")
 
 
 class CreateResourceOut(BaseModel):
@@ -48,7 +48,7 @@ class CreateResourceOut(BaseModel):
     id: int
     name: str
     type: str
-    description: Optional[str] = None
+    description: str | None = None
 
 
 class CreateAccessIn(BaseModel):

@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import AsyncGenerator
 
 import redis.asyncio as redis
-from fastapi import Depends
 
 from access_control_service.config.settings import Settings, get_settings
 from access_control_service.services.redis_client import redis_client

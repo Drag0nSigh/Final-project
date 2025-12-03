@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Literal, Optional
+from typing import Literal
 
 import aio_pika
 from aio_pika.abc import AbstractConnection, AbstractChannel, AbstractQueue
@@ -19,10 +19,10 @@ class RabbitMQManager:
         """Инициализация менеджера с настройками из конфигурации."""
 
         self._settings = get_settings()
-        self._connection: Optional[AbstractConnection] = None
-        self._channel: Optional[AbstractChannel] = None
-        self._validation_queue: Optional[AbstractQueue] = None
-        self._result_queue: Optional[AbstractQueue] = None
+        self._connection: AbstractConnection | None = None
+        self._channel: AbstractChannel | None = None
+        self._validation_queue: AbstractQueue | None = None
+        self._result_queue: AbstractQueue | None = None
 
     @property
     def is_connected(self) -> bool:
@@ -34,19 +34,19 @@ class RabbitMQManager:
         )
 
     @property
-    def channel(self) -> Optional[AbstractChannel]:
+    def channel(self) -> AbstractChannel | None:
         """Возвращает текущий канал RabbitMQ (если подключение установлено)."""
 
         return self._channel
 
     @property
-    def validation_queue(self) -> Optional[AbstractQueue]:
+    def validation_queue(self) -> AbstractQueue | None:
         """Возвращает объект очереди `validation_queue` (если объявлена)."""
 
         return self._validation_queue
 
     @property
-    def result_queue(self) -> Optional[AbstractQueue]:
+    def result_queue(self) -> AbstractQueue | None:
         """Возвращает объект очереди `result_queue` (если объявлена)."""
 
         return self._result_queue

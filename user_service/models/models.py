@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import Literal
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -17,10 +17,10 @@ class UserPermission(BaseModel):
     user_id: int
     permission_type: Literal["access", "group"]
     item_id: int
-    item_name: Optional[str] = None
+    item_name: str | None = None
     status: Literal["active", "pending", "revoked"]
     request_id: str  # UUID в виде строки
-    assigned_at: Optional[datetime] = None
+    assigned_at: datetime | None = None
 
 
 # Pydantic модели для ввода (Input)
@@ -58,9 +58,9 @@ class PermissionOut(BaseModel):
     id: int
     permission_type: Literal["access", "group"]
     item_id: int
-    item_name: Optional[str] = None  # Название доступа/группы (опционально)
+    item_name: str | None = None  # Название доступа/группы (опционально)
     status: str
-    assigned_at: Optional[datetime] = None
+    assigned_at: datetime | None = None
 
 
 class GetUserPermissionsOut(BaseModel):
@@ -74,7 +74,7 @@ class GetUserPermissionsOut(BaseModel):
 class ActiveGroup(BaseModel):
     """Модель одной активной группы"""
     id: int
-    name: Optional[str] = None
+    name: str | None = None
 
 
 class GetActiveGroupsOut(BaseModel):
@@ -101,8 +101,8 @@ class CreateUserPermissionIn(BaseModel):
     permission_type: Literal["access", "group"] = Field(description="Тип права: access или group")
     item_id: int = Field(gt=0, description="ID доступа или группы")
     status: Literal["active", "pending", "revoked"] = Field(default="active", description="Статус права")
-    item_name: Optional[str] = Field(default=None, description="Название доступа или группы")
-    request_id: Optional[str] = Field(default=None, description="UUID запроса (опционально, будет сгенерирован если не указан)")
+    item_name: str | None = Field(default=None, description="Название доступа или группы")
+    request_id: str | None = Field(default=None, description="UUID запроса (опционально, будет сгенерирован если не указан)")
 
 
 class CreateUserPermissionOut(BaseModel):
@@ -111,16 +111,16 @@ class CreateUserPermissionOut(BaseModel):
     user_id: int
     permission_type: str
     item_id: int
-    item_name: Optional[str] = None
+    item_name: str | None = None
     status: str
     request_id: str
-    assigned_at: Optional[datetime] = None
+    assigned_at: datetime | None = None
 
 
 class UpdatePermissionStatusIn(BaseModel):
     """Модель для обновления статуса заявки (активация/отклонение)"""
     status: Literal["active", "rejected"] = Field(description="Новый статус: 'active' или 'rejected'")
-    reason: Optional[str] = Field(default=None, description="Причина отклонения (опционально)")
+    reason: str | None = Field(default=None, description="Причина отклонения (опционально)")
 
 
 class UpdatePermissionStatusOut(BaseModel):

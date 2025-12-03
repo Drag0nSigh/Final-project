@@ -84,4 +84,3 @@ app.include_router(accesses.router, prefix="/accesses", tags=["Accesses"])
 app.include_router(groups.router, prefix="/groups", tags=["Groups"])
 app.include_router(conflicts.router, prefix="/conflicts", tags=["Conflicts"])
 app.include_router(admin.router, tags=["Admin"])
-
