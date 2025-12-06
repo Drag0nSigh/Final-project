@@ -20,15 +20,6 @@ from validation_service.app.services.validation_service import ValidationService
 from validation_service.app.publishers.result_publisher import ResultPublisher
 from validation_service.app.consumers.validation_consumer import ValidationConsumer
 
-# Глобальные переменные для хранения компонентов
-cache: RedisCache = None
-user_client: UserServiceClient = None
-access_control_client: AccessControlClient = None
-validation_service: ValidationService = None
-publisher: ResultPublisher = None
-consumer: ValidationConsumer = None
-consumer_task: asyncio.Task = None
-
 settings = Settings()
 log_level = getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO)
 logging.basicConfig(
@@ -50,9 +41,6 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Управление жизненным циклом приложения"""
-
-    global cache, user_client, access_control_client
-    global validation_service, publisher, consumer, consumer_task, settings
     
     logger.debug("Запуск Validation Service...")
     
@@ -66,6 +54,7 @@ async def lifespan(app: FastAPI):
                 redis_port=settings.REDIS_PORT
             )
             await cache.connect()
+            app.state.cache = cache
             logger.debug("Redis кэш подключен")
         except Exception as e:
             logger.exception(f"Ошибка инициализации Redis кэша: {e}")
@@ -83,6 +72,8 @@ async def lifespan(app: FastAPI):
                 cache=cache,
                 timeout=settings.HTTP_TIMEOUT
             )
+            app.state.user_client = user_client
+            app.state.access_control_client = access_control_client
             logger.debug("HTTP клиенты инициализированы")
         except Exception as e:
             logger.exception(f"Ошибка инициализации HTTP клиентов: {e}")
@@ -94,6 +85,7 @@ async def lifespan(app: FastAPI):
                 user_client=user_client,
                 access_control_client=access_control_client
             )
+            app.state.validation_service = validation_service
             logger.debug("ValidationService инициализирован")
         except Exception as e:
             logger.exception(f"Ошибка инициализации ValidationService: {e}")
@@ -106,6 +98,7 @@ async def lifespan(app: FastAPI):
                 result_queue_name=settings.RESULT_QUEUE
             )
             await publisher.connect()
+            app.state.publisher = publisher
             logger.debug("ResultPublisher подключен")
         except Exception as e:
             logger.exception(f"Ошибка инициализации ResultPublisher: {e}")
@@ -120,6 +113,7 @@ async def lifespan(app: FastAPI):
                 validation_queue_name=settings.VALIDATION_QUEUE
             )
             await consumer.connect()
+            app.state.consumer = consumer
             logger.debug("ValidationConsumer подключен")
         except Exception as e:
             logger.exception(f"Ошибка инициализации ValidationConsumer: {e}")
@@ -128,6 +122,7 @@ async def lifespan(app: FastAPI):
         try:
             logger.debug("Запуск ValidationConsumer в фоновом режиме...")
             consumer_task = asyncio.create_task(consumer.start_consuming())
+            app.state.consumer_task = consumer_task
             logger.debug("Validation Service запущен и готов к работе")
         except Exception as e:
             logger.exception(f"Ошибка запуска ValidationConsumer: {e}")
@@ -141,10 +136,18 @@ async def lifespan(app: FastAPI):
     
     logger.debug("Остановка Validation Service...")
     
+    consumer_task = getattr(app.state, "consumer_task", None)
+    consumer = getattr(app.state, "consumer", None)
+    publisher = getattr(app.state, "publisher", None)
+    user_client = getattr(app.state, "user_client", None)
+    access_control_client = getattr(app.state, "access_control_client", None)
+    cache = getattr(app.state, "cache", None)
+    
     if consumer_task and not consumer_task.done():
         try:
             logger.debug("Остановка ValidationConsumer...")
-            consumer._consuming = False
+            if consumer:
+                consumer._consuming = False
             consumer_task.cancel()
             try:
                 await consumer_task
@@ -209,7 +212,7 @@ async def health_check():
 
 
 @app.get("/ready")
-async def readiness_check():
+async def readiness_check(app: FastAPI):
     """Readiness check"""
 
     checks = {
@@ -218,6 +221,12 @@ async def readiness_check():
         "user_service": False,
         "access_control_service": False
     }
+    
+    cache = getattr(app.state, "cache", None)
+    consumer = getattr(app.state, "consumer", None)
+    publisher = getattr(app.state, "publisher", None)
+    user_client = getattr(app.state, "user_client", None)
+    access_control_client = getattr(app.state, "access_control_client", None)
     
     try:
         if cache and cache.client:

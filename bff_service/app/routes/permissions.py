@@ -9,7 +9,7 @@ from bff_service.models.models import (
     RevokePermissionOut,
     GetUserPermissionsOut,
 )
-from bff_service.services.user_service_client import UserServiceClient
+from bff_service.services.protocols import UserServiceClientProtocol
 from bff_service.app.dependencies import get_user_service_client
 from bff_service.app.utils.error_handlers import handle_service_errors
 
@@ -22,7 +22,7 @@ router = APIRouter()
 @handle_service_errors("User Service")
 async def request_access(
     request: RequestAccessIn,
-    user_service_client: UserServiceClient = Depends(get_user_service_client),
+    user_service_client: UserServiceClientProtocol = Depends(get_user_service_client),
 ):
     """Создание заявки на получение доступа или группы прав"""
     logger.debug(
@@ -47,7 +47,7 @@ async def request_access(
 async def revoke_permission(
     user_id: int,
     request: RevokePermissionIn,
-    user_service_client: UserServiceClient = Depends(get_user_service_client),
+    user_service_client: UserServiceClientProtocol = Depends(get_user_service_client),
 ):
     """Отзыв права у пользователя"""
     logger.debug(
@@ -68,7 +68,7 @@ async def revoke_permission(
 @handle_service_errors("User Service")
 async def get_user_permissions(
     user_id: int,
-    user_service_client: UserServiceClient = Depends(get_user_service_client),
+    user_service_client: UserServiceClientProtocol = Depends(get_user_service_client),
 ):
     """Получение всех прав пользователя"""
     logger.debug(f"Получение прав пользователя: user={user_id}")

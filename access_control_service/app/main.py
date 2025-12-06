@@ -5,8 +5,7 @@ import logging
 import sys
 
 from access_control_service.app.routes import resources, accesses, groups, conflicts, health, admin
-from access_control_service.db.database import db
-from access_control_service.services.redis_client import redis_client
+from access_control_service.app.dependencies import get_database, get_redis_client
 from access_control_service.config.settings import get_settings
 
 settings = get_settings()
@@ -28,6 +27,9 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Глобальный lifecycle Access Control Service."""
+
+    db = get_database()
+    redis_client = get_redis_client()
 
     try:
         await db.connect()

@@ -3,8 +3,7 @@ from fastapi import APIRouter, HTTPException, status
 from datetime import datetime
 from sqlalchemy import text
 
-from access_control_service.db.database import db
-from access_control_service.services.redis_client import redis_client
+from access_control_service.app.dependencies import get_database, get_redis_client
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -27,6 +26,9 @@ async def readiness_check():
         "db": False,
         "redis": False
     }
+    
+    db = get_database()
+    redis_client = get_redis_client()
     
     try:
         if db.engine is None:

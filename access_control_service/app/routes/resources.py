@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from access_control_service.db.database import db
+from access_control_service.app.dependencies import get_db_session
 from access_control_service.models.models import (
     Resource as ResourceOut,
 )
@@ -15,7 +15,7 @@ router = APIRouter()
 @handle_errors(error_message_prefix="при получении ресурса")
 async def get_resource(
     resource_id: int,
-    session: AsyncSession = Depends(db.get_db)
+    session: AsyncSession = Depends(get_db_session)
 ):
     """Получение ресурса по ID"""
     resource = await ResourceService.get_resource(session, resource_id)
@@ -25,7 +25,7 @@ async def get_resource(
 @router.get("", response_model=list[ResourceOut])
 @handle_errors(error_message_prefix="при получении всех ресурсов")
 async def get_all_resources(
-    session: AsyncSession = Depends(db.get_db)
+    session: AsyncSession = Depends(get_db_session)
 ):
     """Получение всех ресурсов"""
     resources = await ResourceService.get_all_resources(session)

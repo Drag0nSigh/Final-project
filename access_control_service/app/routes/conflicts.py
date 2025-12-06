@@ -3,7 +3,7 @@ import redis.asyncio as redis
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from access_control_service.db.database import db
+from access_control_service.app.dependencies import get_db_session
 from access_control_service.app.dependencies import get_redis_connection
 from access_control_service.models.models import GetConflictsOut, Conflict
 from access_control_service.services.conflict_service import ConflictService
@@ -18,7 +18,7 @@ router = APIRouter()
 
 @router.get("", response_model=GetConflictsOut)
 async def get_all_conflicts(
-    session: AsyncSession = Depends(db.get_db),
+    session: AsyncSession = Depends(get_db_session),
     redis_conn: redis.Redis = Depends(get_redis_connection)
 ):
     """Получение всех конфликтов"""

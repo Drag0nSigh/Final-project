@@ -6,10 +6,8 @@ import logging
 import sys
 
 from user_service.app.routes import permissions, health, admin
-from user_service.db.database import db
-from user_service.services.redis_client import redis_client
-from user_service.services.rabbitmq_manager import rabbitmq_manager
-from user_service.services.result_consumer import result_consumer
+from user_service.app.dependencies import get_database, get_redis_client, get_rabbitmq_manager
+from user_service.services.result_consumer import ResultConsumer
 from user_service.config.settings import get_settings
 
 settings = get_settings()
@@ -31,9 +29,11 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Глобальный lifecycle User Service."""
 
-    # --- Startup -------------------------------------------------------------
+    db = get_database()
+    redis_client = get_redis_client()
+    rabbitmq_manager = get_rabbitmq_manager()
+    
     try:
         await db.connect()
         await db.init_db()
@@ -59,6 +59,12 @@ async def lifespan(app: FastAPI):
         await db.close()
         raise
 
+    result_consumer = ResultConsumer(
+        db=db,
+        redis_client=redis_client,
+        rabbitmq_manager=rabbitmq_manager
+    )
+    
     consumer_task: asyncio.Task | None = None
     try:
         consumer_task = asyncio.create_task(result_consumer.start_consuming())

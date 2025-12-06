@@ -6,14 +6,14 @@ from user_service.models.models import (
     CreateUserIn,
     CreateUserOut
 )
-from user_service.db.database import db
+from user_service.app.dependencies import get_db_session
 from user_service.db.user import User
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
 
 @router.post("/users", response_model=CreateUserOut, status_code=status.HTTP_201_CREATED)
-async def create_user(user_data: CreateUserIn, session: AsyncSession = Depends(db.get_db)):
+async def create_user(user_data: CreateUserIn, session: AsyncSession = Depends(get_db_session)):
     """
     Служебный эндпоинт для создания пользователя"""
     

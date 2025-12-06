@@ -3,7 +3,7 @@ import redis.asyncio as redis
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from access_control_service.db.database import db
+from access_control_service.app.dependencies import get_db_session
 from access_control_service.app.dependencies import get_redis_connection
 from access_control_service.services.cache import (
     invalidate_access_groups_cache,
@@ -40,7 +40,7 @@ router = APIRouter(prefix="/admin", tags=["Admin"])
 @handle_errors(error_message_prefix="при создании ресурса")
 async def create_resource(
     resource_in: CreateResourceIn,
-    session: AsyncSession = Depends(db.get_db)
+    session: AsyncSession = Depends(get_db_session)
 ):
     """Создание ресурса (служебный эндпоинт)"""
     return await ResourceService.create_resource(session, resource_in)
@@ -53,7 +53,7 @@ async def create_resource(
 )
 async def delete_resource(
     resource_id: int,
-    session: AsyncSession = Depends(db.get_db)
+    session: AsyncSession = Depends(get_db_session)
 ):
     """Удаление ресурса (служебный эндпоинт)"""
     await ResourceService.delete_resource(session, resource_id)
@@ -63,7 +63,7 @@ async def delete_resource(
 @handle_errors(error_message_prefix="при создании доступа")
 async def create_access(
     access_in: CreateAccessIn,
-    session: AsyncSession = Depends(db.get_db)
+    session: AsyncSession = Depends(get_db_session)
 ):
     """Создание доступа с ресурсами (служебный эндпоинт)"""
     return await AccessService.create_access(session, access_in)
@@ -74,7 +74,7 @@ async def create_access(
 async def add_resource_to_access(
     access_id: int,
     resource_data: AddResourceToAccessIn,
-    session: AsyncSession = Depends(db.get_db),
+    session: AsyncSession = Depends(get_db_session),
     redis_conn: redis.Redis = Depends(get_redis_connection)
 ):
     """Добавление ресурса к доступу"""
@@ -110,7 +110,7 @@ async def add_resource_to_access(
 async def remove_resource_from_access(
     access_id: int,
     resource_id: int,
-    session: AsyncSession = Depends(db.get_db),
+    session: AsyncSession = Depends(get_db_session),
     redis_conn: redis.Redis = Depends(get_redis_connection)
 ):
     """Удаление ресурса из доступа"""
@@ -130,7 +130,7 @@ async def remove_resource_from_access(
 )
 async def delete_access(
     access_id: int,
-    session: AsyncSession = Depends(db.get_db),
+    session: AsyncSession = Depends(get_db_session),
     redis_conn: redis.Redis = Depends(get_redis_connection)
 ):
     """Удаление доступа"""
@@ -145,7 +145,7 @@ async def delete_access(
 @handle_errors(error_message_prefix="при создании группы")
 async def create_group(
     group_in: CreateGroupIn,
-    session: AsyncSession = Depends(db.get_db)
+    session: AsyncSession = Depends(get_db_session)
 ):
     """Создание группы прав с доступами"""
     return await GroupService.create_group(session, group_in)
@@ -156,7 +156,7 @@ async def create_group(
 async def add_access_to_group(
     group_id: int,
     access_id: int,
-    session: AsyncSession = Depends(db.get_db),
+    session: AsyncSession = Depends(get_db_session),
     redis_conn: redis.Redis = Depends(get_redis_connection)
 ):
     """Добавление доступа к группе (служебный эндпоинт)"""
@@ -171,7 +171,7 @@ async def add_access_to_group(
 async def remove_access_from_group(
     group_id: int,
     access_id: int,
-    session: AsyncSession = Depends(db.get_db),
+    session: AsyncSession = Depends(get_db_session),
     redis_conn: redis.Redis = Depends(get_redis_connection)
 ):
     """Удаление доступа из группы (служебный эндпоинт)"""
@@ -188,7 +188,7 @@ async def remove_access_from_group(
 )
 async def delete_group(
     group_id: int,
-    session: AsyncSession = Depends(db.get_db),
+    session: AsyncSession = Depends(get_db_session),
     redis_conn: redis.Redis = Depends(get_redis_connection)
 ):
     """Удаление группы (служебный эндпоинт)"""
@@ -206,7 +206,7 @@ async def delete_group(
 )
 async def create_conflict(
     conflict_in: CreateConflictIn,
-    session: AsyncSession = Depends(db.get_db),
+    session: AsyncSession = Depends(get_db_session),
     redis_conn: redis.Redis = Depends(get_redis_connection)
 ):
     """Создание конфликта между группами (служебный эндпоинт).
@@ -224,7 +224,7 @@ async def create_conflict(
 @handle_errors(error_message_prefix="при удалении конфликта")
 async def delete_conflict(
     conflict_in: DeleteConflictIn,
-    session: AsyncSession = Depends(db.get_db),
+    session: AsyncSession = Depends(get_db_session),
     redis_conn: redis.Redis = Depends(get_redis_connection)
 ):
     """Удаление конфликта между группами.

@@ -6,10 +6,8 @@ import logging
 import aio_pika
 from aio_pika.abc import AbstractQueue
 
-from user_service.db.database import db
-from user_service.services.redis_client import redis_client
 from user_service.services.permissions_service import PermissionService
-from user_service.services.rabbitmq_manager import rabbitmq_manager
+from user_service.db.protocols import DatabaseProtocol, RedisClientProtocol, RabbitMQManagerProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -17,18 +15,24 @@ logger = logging.getLogger(__name__)
 class ResultConsumer:
     """Consumer для обработки результатов валидации из result_queue."""
 
-    def __init__(self) -> None:
-        """Инициализация consumer."""
-
+    def __init__(
+        self,
+        db: DatabaseProtocol,
+        redis_client: RedisClientProtocol,
+        rabbitmq_manager: RabbitMQManagerProtocol,
+    ) -> None:
+        self._db = db
+        self._redis_client = redis_client
+        self._rabbitmq_manager = rabbitmq_manager
         self._consuming = False
 
     async def start_consuming(self) -> None:
         """Начинает потребление сообщений из result_queue."""
 
-        if not rabbitmq_manager.is_connected:
+        if not self._rabbitmq_manager.is_connected:
             raise RuntimeError("RabbitMQ не подключён. Вызовите connect() сначала.")
 
-        result_queue = rabbitmq_manager.result_queue
+        result_queue = self._rabbitmq_manager.result_queue
         if not result_queue:
             raise RuntimeError("Очередь result_queue не объявлена")
 
@@ -90,14 +94,14 @@ class ResultConsumer:
                     f"user_id={user_id}, permission_type={permission_type}, item_id={item_id}"
                 )
 
-                if db.AsyncSessionLocal is None:
+                if self._db.AsyncSessionLocal is None:
                     logger.error("БД не инициализирована, невозможно обработать сообщение")
                     await message.nack(requeue=True)
                     return
 
-                async with db.AsyncSessionLocal() as session:
+                async with self._db.AsyncSessionLocal() as session:
                     try:
-                        redis_conn = await redis_client.get_connection()
+                        redis_conn = self._redis_client.connection
                         service = PermissionService(session=session, redis_conn=redis_conn)
 
                         permission = await service.apply_validation_result(
@@ -139,8 +143,4 @@ class ResultConsumer:
                     f"Ошибка обработки сообщения из result_queue: request_id={request_id_value}"
                 )
                 await message.nack(requeue=False)
-
-
-# Глобальный экземпляр consumer
-result_consumer = ResultConsumer()
 

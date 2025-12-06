@@ -1,29 +1,49 @@
-
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import AsyncGenerator
 
 import redis.asyncio as redis
-from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from user_service.config.settings import Settings, get_settings
-from user_service.services.redis_client import redis_client
-from user_service.services.rabbitmq_manager import rabbitmq_manager, RabbitMQManager
+from user_service.db.database import Database
+from user_service.services.redis_client import RedisClient
+from user_service.services.rabbitmq_manager import RabbitMQManager
+from user_service.db.protocols import (
+    DatabaseProtocol,
+    RedisClientProtocol,
+    RabbitMQManagerProtocol,
+)
 
 
+@lru_cache(maxsize=1)
 def get_settings_dependency() -> Settings:
-    """Возвращает singleton-настройки User Service."""
-
     return get_settings()
 
 
-async def get_redis_connection() -> AsyncGenerator[redis.Redis, None]:
-    """Даёт активное соединение с Redis."""
+@lru_cache(maxsize=1)
+def get_database() -> DatabaseProtocol:
+    return Database()
 
+
+@lru_cache(maxsize=1)
+def get_redis_client() -> RedisClientProtocol:
+    return RedisClient()
+
+
+@lru_cache(maxsize=1)
+def get_rabbitmq_manager() -> RabbitMQManagerProtocol:
+    return RabbitMQManager()
+
+
+async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
+    db = get_database()
+    async for session in db.get_db():
+        yield session
+
+
+async def get_redis_connection() -> AsyncGenerator[redis.Redis, None]:
+    redis_client = get_redis_client()
     connection = redis_client.connection
     yield connection
-
-def get_rabbitmq_manager_dependency() -> RabbitMQManager:
-    """Возвращает singleton-менеджер RabbitMQ."""
-
-    return rabbitmq_manager

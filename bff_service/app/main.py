@@ -27,7 +27,6 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Управление жизненным циклом приложения."""
     logger.debug("BFF Service запускается...")
     yield
     logger.debug("BFF Service завершает работу, закрытие HTTP клиентов...")

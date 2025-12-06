@@ -12,14 +12,14 @@ from user_service.models.models import (
     GetUserPermissionsOut,
     GetActiveGroupsOut,
 )
-from user_service.db.database import db
+from user_service.app.dependencies import get_db_session
 from user_service.app.dependencies import (
     get_settings_dependency,
-    get_rabbitmq_manager_dependency,
+    get_rabbitmq_manager,
     get_redis_connection,
 )
 from user_service.config.settings import Settings
-from user_service.services.rabbitmq_manager import RabbitMQManager
+from user_service.db.protocols import RabbitMQManagerProtocol
 from user_service.services.permissions_service import PermissionService
 from user_service.app.utils.error_handlers import handle_errors
 
@@ -33,9 +33,9 @@ router = APIRouter()
 @handle_errors("Не удалось создать заявку")
 async def request_access(
     request: RequestAccessIn,
-    session: AsyncSession = Depends(db.get_db),
+    session: AsyncSession = Depends(get_db_session),
     settings: Settings = Depends(get_settings_dependency),
-    rabbitmq: RabbitMQManager = Depends(get_rabbitmq_manager_dependency),
+    rabbitmq: RabbitMQManagerProtocol = Depends(get_rabbitmq_manager),
 ):
     """Создание заявки на получение доступа или группы прав."""
 
@@ -77,7 +77,7 @@ async def request_access(
 async def revoke_permission(
     user_id: int,
     request: RevokePermissionIn,
-    session: AsyncSession = Depends(db.get_db),
+    session: AsyncSession = Depends(get_db_session),
     redis_conn=Depends(get_redis_connection),
 ):
     """Отзыв права у пользователя (синхронная операция)."""
@@ -106,7 +106,7 @@ async def revoke_permission(
 @handle_errors("Не удалось получить список прав")
 async def get_user_permissions(
     user_id: int,
-    session: AsyncSession = Depends(db.get_db),
+    session: AsyncSession = Depends(get_db_session),
 ):
     """Получение всех прав пользователя."""
 
@@ -120,7 +120,7 @@ async def get_user_permissions(
 @handle_errors("Не удалось получить активные группы пользователя")
 async def get_current_active_groups(
     user_id: int,
-    session: AsyncSession = Depends(db.get_db),
+    session: AsyncSession = Depends(get_db_session),
     redis_conn=Depends(get_redis_connection),
 ):
     """Получение активных групп пользователя. """
