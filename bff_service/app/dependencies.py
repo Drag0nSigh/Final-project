@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from functools import lru_cache
 
 from bff_service.config.settings import Settings, get_settings
@@ -11,7 +13,6 @@ from bff_service.services.protocols import (
 
 @lru_cache(maxsize=1)
 def get_settings_dependency() -> Settings:
-    """Возвращает настройки для использования в Depends()."""
     return get_settings()
 
 

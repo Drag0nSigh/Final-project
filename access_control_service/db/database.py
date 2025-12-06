@@ -135,21 +135,6 @@ class Database:
             await conn.run_sync(Base.metadata.create_all)
             logger.debug("Таблицы базы данных созданы успешно")
     
-    async def get_db(self) -> AsyncGenerator[AsyncSession, None]:
-        """Dependency для получения сессии БД"""
-        if self.AsyncSessionLocal is None:
-            await self.connect()
-        
-        async with self.AsyncSessionLocal() as session:
-            try:
-                yield session
-                await session.commit()
-            except Exception:
-                await session.rollback()
-                raise
-            finally:
-                await session.close()
-    
     async def close(self):
         """Закрытие всех подключений к БД"""
         if self.engine is not None:

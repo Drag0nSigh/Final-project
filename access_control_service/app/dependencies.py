@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import AsyncGenerator
+from typing import AsyncGenerator, cast
 
 import redis.asyncio as redis
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,9 +28,18 @@ def get_redis_client() -> RedisClientProtocol:
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
-    db = get_database()
-    async for session in db.get_db():
-        yield session
+    db = cast(Database, get_database())
+    
+    if db.AsyncSessionLocal is None:
+        await db.connect()
+    
+    async with db.AsyncSessionLocal() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
 
 
 async def get_redis_connection() -> AsyncGenerator[redis.Redis, None]:

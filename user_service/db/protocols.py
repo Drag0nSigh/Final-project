@@ -1,19 +1,19 @@
-from typing import Protocol, AsyncGenerator, Any
+from typing import Protocol, Any
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 import redis.asyncio as redis
 from aio_pika.abc import AbstractConnection, AbstractChannel, AbstractQueue
 
 
 class DatabaseProtocol(Protocol):
 
+    engine: AsyncEngine | None
+    AsyncSessionLocal: async_sessionmaker | None
+
     async def connect(self) -> None:
         ...
 
     async def init_db(self) -> None:
-        ...
-
-    async def get_db(self) -> AsyncGenerator[AsyncSession, None]:
         ...
 
     async def close(self) -> None:
