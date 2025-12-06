@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from access_control_service.app.dependencies import get_db_session
 from access_control_service.models.models import (
     Access as AccessOut,
-    GetAccessGroupsOut,
+    GetAccessGroupsResponse,
     Resource as ResourceModel,
 )
 from access_control_service.services.access_service import AccessService
@@ -69,7 +69,7 @@ async def get_all_accesses(
     return result
 
 
-@router.get("/{access_id}/groups", response_model=GetAccessGroupsOut)
+@router.get("/{access_id}/groups", response_model=GetAccessGroupsResponse)
 @handle_errors(error_message_prefix="при получении групп для доступа")
 async def get_groups_by_access(
     access_id: int,

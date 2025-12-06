@@ -4,16 +4,16 @@ from typing import Iterable
 
 from user_service.db.userpermission import UserPermission as UserPermissionModel
 from user_service.models.models import (
-    PermissionOut,
+    PermissionResponse,
     ActiveGroup,
-    GetActiveGroupsOut,
+    GetActiveGroupsResponse,
 )
 
 
-def permission_model_to_schema(permission: UserPermissionModel) -> PermissionOut:
-    """Преобразует SQLAlchemy-модель ``UserPermission`` в ``PermissionOut``."""
+def permission_model_to_schema(permission: UserPermissionModel) -> PermissionResponse:
+    """Преобразует SQLAlchemy-модель ``UserPermission`` в ``PermissionResponse``."""
 
-    return PermissionOut(
+    return PermissionResponse(
         id=permission.id,
         permission_type=permission.permission_type,
         item_id=permission.item_id,
@@ -25,8 +25,8 @@ def permission_model_to_schema(permission: UserPermissionModel) -> PermissionOut
 
 def permissions_to_active_groups_schema(
     permissions: Iterable[UserPermissionModel],
-) -> GetActiveGroupsOut:
-    """Формирует ответ ``GetActiveGroupsOut`` из набора ``UserPermission``."""
+) -> GetActiveGroupsResponse:
+    """Формирует ответ ``GetActiveGroupsResponse`` из набора ``UserPermission``."""
 
     groups: list[ActiveGroup] = []
     for permission in permissions:
@@ -37,4 +37,4 @@ def permissions_to_active_groups_schema(
             )
         )
 
-    return GetActiveGroupsOut(groups=groups)
+    return GetActiveGroupsResponse(groups=groups)

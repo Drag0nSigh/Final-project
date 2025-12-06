@@ -8,7 +8,7 @@ import asyncio
 import logging
 import sys
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, status
+from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 import httpx
 
@@ -212,7 +212,7 @@ async def health_check():
 
 
 @app.get("/ready")
-async def readiness_check(app: FastAPI):
+async def readiness_check(request: Request):
     """Readiness check"""
 
     checks = {
@@ -222,6 +222,7 @@ async def readiness_check(app: FastAPI):
         "access_control_service": False
     }
     
+    app = request.app
     cache = getattr(app.state, "cache", None)
     consumer = getattr(app.state, "consumer", None)
     publisher = getattr(app.state, "publisher", None)

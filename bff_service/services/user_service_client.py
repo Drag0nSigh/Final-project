@@ -1,6 +1,7 @@
 import logging
 import httpx
-from typing import Any
+
+from bff_service.models.models import RequestAccessResponse, RevokePermissionResponse, GetUserPermissionsResponse
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,7 @@ class UserServiceClient:
 
     async def request_access(
         self, user_id: int, permission_type: str, item_id: int
-    ) -> dict[str, Any]:
+    ) -> RequestAccessResponse:
         """Создание заявки на получение доступа или группы прав."""
 
         url = "/request"
@@ -31,11 +32,11 @@ class UserServiceClient:
         response.raise_for_status()
         result = response.json()
         logger.debug(f"Получен ответ от User Service: {result}")
-        return result
+        return RequestAccessResponse.model_validate(result)
 
     async def revoke_permission(
         self, user_id: int, permission_type: str, item_id: int
-    ) -> dict[str, Any]:
+    ) -> RevokePermissionResponse:
         """Отзыв права у пользователя."""
 
         url = f"/users/{user_id}/permissions"
@@ -50,9 +51,9 @@ class UserServiceClient:
         response.raise_for_status()
         result = response.json()
         logger.debug(f"Получен ответ от User Service: {result}")
-        return result
+        return RevokePermissionResponse.model_validate(result)
 
-    async def get_user_permissions(self, user_id: int) -> dict[str, Any]:
+    async def get_user_permissions(self, user_id: int) -> GetUserPermissionsResponse:
         """Получение всех прав пользователя."""
         
         url = f"/users/{user_id}/permissions"
@@ -63,7 +64,7 @@ class UserServiceClient:
         response.raise_for_status()
         result = response.json()
         logger.debug(f"Получен ответ от User Service: {result}")
-        return result
+        return GetUserPermissionsResponse.model_validate(result)
 
     async def close(self):
         """Закрыть HTTP клиент."""

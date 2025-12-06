@@ -1,6 +1,7 @@
 import logging
 import httpx
-from typing import Any
+
+from bff_service.models.models import Resource, Access, Group, GetConflictsResponse
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +15,7 @@ class AccessControlClient:
         self.timeout = timeout
         self.client = httpx.AsyncClient(base_url=self.base_url, timeout=self.timeout)
 
-    async def get_all_resources(self) -> list[dict[str, Any]]:
+    async def get_all_resources(self) -> list[Resource]:
         """Получение всех ресурсов."""
         url = "/resources"
 
@@ -24,9 +25,9 @@ class AccessControlClient:
         response.raise_for_status()
         result = response.json()
         logger.debug(f"Получен ответ от Access Control Service: {len(result)} ресурсов")
-        return result
+        return [Resource.model_validate(item) for item in result]
 
-    async def get_resource(self, resource_id: int) -> dict[str, Any]:
+    async def get_resource(self, resource_id: int) -> Resource:
         """Получение ресурса по ID."""
         url = f"/resources/{resource_id}"
 
@@ -36,9 +37,9 @@ class AccessControlClient:
         response.raise_for_status()
         result = response.json()
         logger.debug(f"Получен ответ от Access Control Service: ресурс {resource_id}")
-        return result
+        return Resource.model_validate(result)
 
-    async def get_all_accesses(self) -> list[dict[str, Any]]:
+    async def get_all_accesses(self) -> list[Access]:
         """Получение всех доступов."""
         url = "/accesses"
 
@@ -48,9 +49,9 @@ class AccessControlClient:
         response.raise_for_status()
         result = response.json()
         logger.debug(f"Получен ответ от Access Control Service: {len(result)} доступов")
-        return result
+        return [Access.model_validate(item) for item in result]
 
-    async def get_access(self, access_id: int) -> dict[str, Any]:
+    async def get_access(self, access_id: int) -> Access:
         """Получение доступа по ID."""
         url = f"/accesses/{access_id}"
 
@@ -60,9 +61,9 @@ class AccessControlClient:
         response.raise_for_status()
         result = response.json()
         logger.debug(f"Получен ответ от Access Control Service: доступ {access_id}")
-        return result
+        return Access.model_validate(result)
 
-    async def get_all_groups(self) -> list[dict[str, Any]]:
+    async def get_all_groups(self) -> list[Group]:
         """Получение всех групп."""
         url = "/groups"
 
@@ -72,9 +73,9 @@ class AccessControlClient:
         response.raise_for_status()
         result = response.json()
         logger.debug(f"Получен ответ от Access Control Service: {len(result)} групп")
-        return result
+        return [Group.model_validate(item) for item in result]
 
-    async def get_group(self, group_id: int) -> dict[str, Any]:
+    async def get_group(self, group_id: int) -> Group:
         """Получение группы по ID."""
         url = f"/groups/{group_id}"
 
@@ -84,9 +85,9 @@ class AccessControlClient:
         response.raise_for_status()
         result = response.json()
         logger.debug(f"Получен ответ от Access Control Service: группа {group_id}")
-        return result
+        return Group.model_validate(result)
 
-    async def get_conflicts(self) -> dict[str, Any]:
+    async def get_conflicts(self) -> GetConflictsResponse:
         """Получение всех конфликтов."""
         url = "/conflicts"
 
@@ -96,7 +97,7 @@ class AccessControlClient:
         response.raise_for_status()
         result = response.json()
         logger.debug(f"Получен ответ от Access Control Service: {len(result.get('conflicts', []))} конфликтов")
-        return result
+        return GetConflictsResponse.model_validate(result)
 
     async def close(self):
         """Закрыть HTTP клиент."""

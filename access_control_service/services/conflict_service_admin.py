@@ -5,8 +5,8 @@ from sqlalchemy import select
 from access_control_service.db.conflict import Conflict
 from access_control_service.db.group import Group
 from access_control_service.models.models import (
-    CreateConflictIn,
-    CreateConflictOut,
+    CreateConflictRequest,
+    CreateConflictResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -17,8 +17,8 @@ class ConflictServiceAdmin:
 
     @staticmethod
     async def create_conflict(
-        session: AsyncSession, conflict_data: CreateConflictIn
-    ) -> list[CreateConflictOut]:
+        session: AsyncSession, conflict_data: CreateConflictRequest
+    ) -> list[CreateConflictResponse]:
         """Создание конфликта между группами с автоматической симметрией."""
 
         group_id1 = conflict_data.group_id1
@@ -53,7 +53,7 @@ class ConflictServiceAdmin:
                 session.add(conflict)
                 await session.flush()
                 created_conflicts.append(
-                    CreateConflictOut(group_id1=g1, group_id2=g2)
+                    CreateConflictResponse(group_id1=g1, group_id2=g2)
                 )
                 logger.info(f"Создан конфликт: group_id1={g1}, group_id2={g2}")
             else:
@@ -61,7 +61,7 @@ class ConflictServiceAdmin:
                     f"Конфликт уже существует: group_id1={g1}, group_id2={g2}"
                 )
                 created_conflicts.append(
-                    CreateConflictOut(group_id1=g1, group_id2=g2)
+                    CreateConflictResponse(group_id1=g1, group_id2=g2)
                 )
 
         logger.info(

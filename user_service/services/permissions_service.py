@@ -23,10 +23,10 @@ from user_service.services.dto import (
     permissions_to_active_groups_schema,
 )
 from user_service.models.models import (
-    RequestAccessIn,
-    RequestAccessOut,
-    GetUserPermissionsOut,
-    GetActiveGroupsOut,
+    RequestAccessRequest,
+    RequestAccessResponse,
+    GetUserPermissionsResponse,
+    GetActiveGroupsResponse,
     ActiveGroup,
 )
 
@@ -40,8 +40,8 @@ class PermissionService:
 
     async def create_request(
         self,
-        request_data: RequestAccessIn,
-    ) -> RequestAccessOut:
+        request_data: RequestAccessRequest,
+    ) -> RequestAccessResponse:
         """Создание заявки на получение доступа или группы прав."""
         
         from uuid import uuid4
@@ -87,9 +87,9 @@ class PermissionService:
         await self.session.flush()
         
         logger.debug(f"Заявка {new_request_id} успешно создана")
-        return RequestAccessOut(status="accepted", request_id=new_request_id)
+        return RequestAccessResponse(status="accepted", request_id=new_request_id)
 
-    async def get_permissions(self, user_id: int) -> GetUserPermissionsOut:
+    async def get_permissions(self, user_id: int) -> GetUserPermissionsResponse:
         """Возвращает все права пользователя, разделяя их на группы и доступы."""
 
         stmt = select(UserPermission).where(UserPermission.user_id == user_id)
@@ -105,19 +105,19 @@ class PermissionService:
             else:
                 accesses.append(schema)
 
-        return GetUserPermissionsOut(
+        return GetUserPermissionsResponse(
             user_id=user_id,
             groups=groups,
             accesses=accesses,
         )
 
-    async def get_active_groups(self, user_id: int) -> GetActiveGroupsOut:
+    async def get_active_groups(self, user_id: int) -> GetActiveGroupsResponse:
         """Возвращает активные группы пользователя, используя кэш Redis."""
 
         if self.redis_conn is not None:
             cached = await get_user_groups_from_cache(self.redis_conn, user_id)
             if cached is not None:
-                return GetActiveGroupsOut(groups=[ActiveGroup(**item) for item in cached])
+                return GetActiveGroupsResponse(groups=[ActiveGroup(**item) for item in cached])
 
         stmt = select(UserPermission).where(
             UserPermission.user_id == user_id,

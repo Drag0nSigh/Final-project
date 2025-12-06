@@ -36,14 +36,14 @@ class Conflict(BaseModel):
 
 
 # Pydantic модели для ввода (Input) - служебные эндпоинты
-class CreateResourceIn(BaseModel):
+class CreateResourceRequest(BaseModel):
     """Модель для создания ресурса"""
     name: str = Field(..., min_length=1, max_length=100, description="Название ресурса")
     type: Literal["API", "Database", "Service"] = Field(..., description="Тип ресурса")
     description: str | None = Field(None, description="Описание ресурса")
 
 
-class CreateResourceOut(BaseModel):
+class CreateResourceResponse(BaseModel):
     """Модель ответа при создании ресурса"""
     id: int
     name: str
@@ -51,45 +51,45 @@ class CreateResourceOut(BaseModel):
     description: str | None = None
 
 
-class CreateAccessIn(BaseModel):
+class CreateAccessRequest(BaseModel):
     """Модель для создания доступа"""
     name: str = Field(..., min_length=1, max_length=100, description="Название доступа")
     resource_ids: list[int] = Field(default_factory=list, description="Список ID ресурсов")
 
 
-class CreateAccessOut(BaseModel):
+class CreateAccessResponse(BaseModel):
     """Модель ответа при создании доступа"""
     id: int
     name: str
     resources: list[Resource] = Field(default_factory=list)
 
 
-class CreateGroupIn(BaseModel):
+class CreateGroupRequest(BaseModel):
     """Модель для создания группы прав"""
     name: str = Field(..., min_length=1, max_length=100, description="Название группы")
     access_ids: list[int] = Field(default_factory=list, description="Список ID доступов")
 
 
-class CreateGroupOut(BaseModel):
+class CreateGroupResponse(BaseModel):
     """Модель ответа при создании группы"""
     id: int
     name: str
     accesses: list[Access] = Field(default_factory=list)
 
 
-class CreateConflictIn(BaseModel):
+class CreateConflictRequest(BaseModel):
     """Модель для создания конфликта между группами"""
     group_id1: int = Field(gt=0, description="ID первой группы")
     group_id2: int = Field(gt=0, description="ID второй группы")
 
 
-class CreateConflictOut(BaseModel):
+class CreateConflictResponse(BaseModel):
     """Модель ответа при создании конфликта"""
     group_id1: int
     group_id2: int
 
 
-class DeleteConflictIn(BaseModel):
+class DeleteConflictRequest(BaseModel):
     """Модель для удаления конфликта между группами"""
     group_id1: int = Field(gt=0, description="ID первой группы")
     group_id2: int = Field(gt=0, description="ID второй группы")
@@ -97,24 +97,24 @@ class DeleteConflictIn(BaseModel):
 
 # Модели для API эндпоинтов
 
-class GetGroupAccessesOut(BaseModel):
+class GetGroupAccessesResponse(BaseModel):
     """Модель для получения доступов группы"""
     group_id: int
     accesses: list[Access] = Field(default_factory=list)
 
 
-class GetAccessGroupsOut(BaseModel):
+class GetAccessGroupsResponse(BaseModel):
     """Модель для получения групп, содержащих доступ"""
     access_id: int
     groups: list[Group] = Field(default_factory=list)
 
 
-class GetConflictsOut(BaseModel):
+class GetConflictsResponse(BaseModel):
     """Модель для получения всех конфликтов"""
     conflicts: list[Conflict] = Field(default_factory=list)
 
 
-class AddResourceToAccessIn(BaseModel):
+class AddResourceToAccessRequest(BaseModel):
     """Модель для добавления ресурса к доступу"""
     resource_id: int = Field(gt=0, description="ID ресурса")
 

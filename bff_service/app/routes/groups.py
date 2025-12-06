@@ -16,13 +16,13 @@ router = APIRouter()
 @handle_service_errors("Access Control Service")
 async def get_all_groups(
     access_control_client: AccessControlClientProtocol = Depends(get_access_control_client),
-):
+) -> list[Group]:
     """Получение всех групп"""
     logger.debug("Получен запрос на получение всех групп")
 
     response = await access_control_client.get_all_groups()
 
-    return [Group(**item) for item in response]
+    return response
 
 
 @router.get("/groups/{group_id}", response_model=Group)
@@ -30,11 +30,11 @@ async def get_all_groups(
 async def get_group(
     group_id: int,
     access_control_client: AccessControlClientProtocol = Depends(get_access_control_client),
-):
+) -> Group:
     """Получение группы по ID"""
     logger.debug(f"Получен запрос на получение группы: group_id={group_id}")
 
     response = await access_control_client.get_group(group_id=group_id)
 
-    return Group(**response)
+    return response
 

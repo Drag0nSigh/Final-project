@@ -3,8 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from user_service.models.models import (
-    CreateUserIn,
-    CreateUserOut
+    CreateUserRequest,
+    CreateUserResponse
 )
 from user_service.app.dependencies import get_db_session
 from user_service.db.user import User
@@ -12,10 +12,9 @@ from user_service.db.user import User
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
 
-@router.post("/users", response_model=CreateUserOut, status_code=status.HTTP_201_CREATED)
-async def create_user(user_data: CreateUserIn, session: AsyncSession = Depends(get_db_session)):
-    """
-    Служебный эндпоинт для создания пользователя"""
+@router.post("/users", response_model=CreateUserResponse, status_code=status.HTTP_201_CREATED)
+async def create_user(user_data: CreateUserRequest, session: AsyncSession = Depends(get_db_session)):
+    """Служебный эндпоинт для создания пользователя"""
     
     stmt = select(User).where(User.username == user_data.username)
     result = await session.execute(stmt)
@@ -33,7 +32,7 @@ async def create_user(user_data: CreateUserIn, session: AsyncSession = Depends(g
     
     await session.refresh(new_user)
     
-    return CreateUserOut(id=new_user.id, username=new_user.username)
+    return CreateUserResponse(id=new_user.id, username=new_user.username)
 
 
 

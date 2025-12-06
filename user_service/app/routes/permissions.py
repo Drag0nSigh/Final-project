@@ -5,12 +5,12 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from user_service.models.models import (
-    RequestAccessIn,
-    RequestAccessOut,
-    RevokePermissionIn,
-    RevokePermissionOut,
-    GetUserPermissionsOut,
-    GetActiveGroupsOut,
+    RequestAccessRequest,
+    RequestAccessResponse,
+    RevokePermissionRequest,
+    RevokePermissionResponse,
+    GetUserPermissionsResponse,
+    GetActiveGroupsResponse,
 )
 from user_service.app.dependencies import get_db_session
 from user_service.app.dependencies import (
@@ -29,10 +29,10 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.post("/request", response_model=RequestAccessOut)
+@router.post("/request", response_model=RequestAccessResponse)
 @handle_errors("Не удалось создать заявку")
 async def request_access(
-    request: RequestAccessIn,
+    request: RequestAccessRequest,
     session: AsyncSession = Depends(get_db_session),
     settings: Settings = Depends(get_settings_dependency),
     rabbitmq: RabbitMQManagerProtocol = Depends(get_rabbitmq_manager),
@@ -72,11 +72,11 @@ async def request_access(
     return result
 
 
-@router.delete("/users/{user_id}/permissions", response_model=RevokePermissionOut)
+@router.delete("/users/{user_id}/permissions", response_model=RevokePermissionResponse)
 @handle_errors("Не удалось отозвать право")
 async def revoke_permission(
     user_id: int,
-    request: RevokePermissionIn,
+    request: RevokePermissionRequest,
     session: AsyncSession = Depends(get_db_session),
     redis_conn=Depends(get_redis_connection),
 ):
@@ -99,10 +99,10 @@ async def revoke_permission(
     logger.debug(
         f"Право отозвано: user={user_id} permission_type={request.permission_type} item_id={request.item_id}"
     )
-    return RevokePermissionOut(status="revoked")
+    return RevokePermissionResponse(status="revoked")
 
 
-@router.get("/users/{user_id}/permissions", response_model=GetUserPermissionsOut)
+@router.get("/users/{user_id}/permissions", response_model=GetUserPermissionsResponse)
 @handle_errors("Не удалось получить список прав")
 async def get_user_permissions(
     user_id: int,
@@ -116,7 +116,7 @@ async def get_user_permissions(
     return await service.get_permissions(user_id)
 
 
-@router.get("/users/{user_id}/current_active_groups", response_model=GetActiveGroupsOut)
+@router.get("/users/{user_id}/current_active_groups", response_model=GetActiveGroupsResponse)
 @handle_errors("Не удалось получить активные группы пользователя")
 async def get_current_active_groups(
     user_id: int,

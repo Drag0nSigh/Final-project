@@ -6,7 +6,7 @@ from access_control_service.app.dependencies import get_db_session
 from access_control_service.app.dependencies import get_redis_connection
 from access_control_service.models.models import (
     Group as GroupOut,
-    GetGroupAccessesOut
+    GetGroupAccessesResponse
 )
 from access_control_service.services.group_service import GroupService
 from access_control_service.services.cache import (
@@ -39,7 +39,7 @@ async def get_all_groups(
     return [GroupOut.model_validate(group) for group in groups]
 
 
-@router.get("/{group_id}/accesses", response_model=GetGroupAccessesOut)
+@router.get("/{group_id}/accesses", response_model=GetGroupAccessesResponse)
 @handle_errors(error_message_prefix="при получении доступов группы")
 async def get_accesses_by_group(
     group_id: int,
@@ -49,7 +49,7 @@ async def get_accesses_by_group(
     """Получение доступов группы"""
     cached_accesses = await get_group_accesses_from_cache(redis_conn, group_id)
     if cached_accesses is not None:
-        return GetGroupAccessesOut.model_validate({
+        return GetGroupAccessesResponse.model_validate({
             "group_id": group_id,
             "accesses": cached_accesses
         })

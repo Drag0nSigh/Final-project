@@ -10,8 +10,6 @@ class User(BaseModel):
 
 
 class UserPermission(BaseModel):
-    """***ВАЖНО для BFF Service***: Модель права пользователя."""
-
     model_config = ConfigDict(from_attributes=True)
     id: int
     user_id: int
@@ -24,7 +22,7 @@ class UserPermission(BaseModel):
 
 
 # Pydantic модели для ввода (Input)
-class RequestAccessIn(BaseModel):
+class RequestAccessRequest(BaseModel):
     """Модель запроса на создание заявки."""
 
     user_id: int = Field(gt=0, description="ID пользователя")
@@ -32,27 +30,27 @@ class RequestAccessIn(BaseModel):
     item_id: int = Field(gt=0, description="ID доступа или группы")
 
 
-class RequestAccessOut(BaseModel):
+class RequestAccessResponse(BaseModel):
     """Модель ответа при создании заявки."""
 
     status: str = Field(default="accepted", description="Статус обработки заявки")
     request_id: str = Field(description="UUID заявки для отслеживания")
 
 
-class RevokePermissionIn(BaseModel):
+class RevokePermissionRequest(BaseModel):
     """Модель запроса на отзыв права у пользователя."""
 
     permission_type: Literal["access", "group"] = Field(description="Тип права")
     item_id: int = Field(gt=0, description="ID доступа или группы")
 
 
-class RevokePermissionOut(BaseModel):
+class RevokePermissionResponse(BaseModel):
     """Модель ответа при отзыве права у пользователя."""
 
     status: str = Field(default="revoked", description="Статус отзыва права")
 
 
-class PermissionOut(BaseModel):
+class PermissionResponse(BaseModel):
     """Модель для отдельного права с деталями."""
 
     id: int
@@ -63,12 +61,12 @@ class PermissionOut(BaseModel):
     assigned_at: datetime | None = None
 
 
-class GetUserPermissionsOut(BaseModel):
+class GetUserPermissionsResponse(BaseModel):
     """Модель для получения всех прав пользователя."""
 
     user_id: int
-    groups: list[PermissionOut] = Field(default_factory=list)
-    accesses: list[PermissionOut] = Field(default_factory=list)
+    groups: list[PermissionResponse] = Field(default_factory=list)
+    accesses: list[PermissionResponse] = Field(default_factory=list)
 
 
 class ActiveGroup(BaseModel):
@@ -77,25 +75,25 @@ class ActiveGroup(BaseModel):
     name: str | None = None
 
 
-class GetActiveGroupsOut(BaseModel):
+class GetActiveGroupsResponse(BaseModel):
     """Модель для получения активных групп (для Validation Service) - список групп."""
     
     groups: list[ActiveGroup] = Field(default_factory=list)
 
 
 # Служебные модели для создания объектов
-class CreateUserIn(BaseModel):
+class CreateUserRequest(BaseModel):
     """Модель для создания пользователя (служебный эндпоинт)"""
     username: str = Field(..., min_length=1, max_length=50, description="Имя пользователя")
 
 
-class CreateUserOut(BaseModel):
+class CreateUserResponse(BaseModel):
     """Модель ответа при создании пользователя"""
     id: int
     username: str
 
 
-class CreateUserPermissionIn(BaseModel):
+class CreateUserPermissionRequest(BaseModel):
     """Модель для создания UserPermission (служебный эндпоинт)"""
     user_id: int = Field(gt=0, description="ID пользователя")
     permission_type: Literal["access", "group"] = Field(description="Тип права: access или group")
@@ -105,7 +103,7 @@ class CreateUserPermissionIn(BaseModel):
     request_id: str | None = Field(default=None, description="UUID запроса (опционально, будет сгенерирован если не указан)")
 
 
-class CreateUserPermissionOut(BaseModel):
+class CreateUserPermissionResponse(BaseModel):
     """Модель ответа при создании UserPermission"""
     id: int
     user_id: int
@@ -117,13 +115,13 @@ class CreateUserPermissionOut(BaseModel):
     assigned_at: datetime | None = None
 
 
-class UpdatePermissionStatusIn(BaseModel):
+class UpdatePermissionStatusRequest(BaseModel):
     """Модель для обновления статуса заявки (активация/отклонение)"""
     status: Literal["active", "rejected"] = Field(description="Новый статус: 'active' или 'rejected'")
     reason: str | None = Field(default=None, description="Причина отклонения (опционально)")
 
 
-class UpdatePermissionStatusOut(BaseModel):
+class UpdatePermissionStatusResponse(BaseModel):
     """Модель ответа при обновлении статуса заявки"""
     request_id: str
     status: str

@@ -13,17 +13,17 @@ from access_control_service.services.cache import (
 
 logger = logging.getLogger(__name__)
 from access_control_service.models.models import (
-    CreateResourceIn,
-    CreateResourceOut,
-    CreateAccessIn,
-    CreateAccessOut,
-    CreateGroupIn,
-    CreateGroupOut,
-    CreateConflictIn,
-    CreateConflictOut,
-    DeleteConflictIn,
+    CreateResourceRequest,
+    CreateResourceResponse,
+    CreateAccessRequest,
+    CreateAccessResponse,
+    CreateGroupRequest,
+    CreateGroupResponse,
+    CreateConflictRequest,
+    CreateConflictResponse,
+    DeleteConflictRequest,
     Access as AccessOut,
-    AddResourceToAccessIn,
+    AddResourceToAccessRequest,
     Resource as ResourceModel,
 )
 from access_control_service.services.resource_service import ResourceService
@@ -36,10 +36,10 @@ from access_control_service.app.utils.error_handlers import handle_errors
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
 
-@router.post("/resources", response_model=CreateResourceOut, status_code=status.HTTP_201_CREATED)
+@router.post("/resources", response_model=CreateResourceResponse, status_code=status.HTTP_201_CREATED)
 @handle_errors(error_message_prefix="при создании ресурса")
 async def create_resource(
-    resource_in: CreateResourceIn,
+    resource_in: CreateResourceRequest,
     session: AsyncSession = Depends(get_db_session)
 ):
     """Создание ресурса (служебный эндпоинт)"""
@@ -59,10 +59,10 @@ async def delete_resource(
     await ResourceService.delete_resource(session, resource_id)
 
 
-@router.post("/accesses", response_model=CreateAccessOut, status_code=status.HTTP_201_CREATED)
+@router.post("/accesses", response_model=CreateAccessResponse, status_code=status.HTTP_201_CREATED)
 @handle_errors(error_message_prefix="при создании доступа")
 async def create_access(
-    access_in: CreateAccessIn,
+    access_in: CreateAccessRequest,
     session: AsyncSession = Depends(get_db_session)
 ):
     """Создание доступа с ресурсами (служебный эндпоинт)"""
@@ -73,7 +73,7 @@ async def create_access(
 @handle_errors(error_message_prefix="при добавлении ресурса к доступу")
 async def add_resource_to_access(
     access_id: int,
-    resource_data: AddResourceToAccessIn,
+    resource_data: AddResourceToAccessRequest,
     session: AsyncSession = Depends(get_db_session),
     redis_conn: redis.Redis = Depends(get_redis_connection)
 ):
@@ -141,10 +141,10 @@ async def delete_access(
 
 
 
-@router.post("/groups", response_model=CreateGroupOut, status_code=status.HTTP_201_CREATED)
+@router.post("/groups", response_model=CreateGroupResponse, status_code=status.HTTP_201_CREATED)
 @handle_errors(error_message_prefix="при создании группы")
 async def create_group(
-    group_in: CreateGroupIn,
+    group_in: CreateGroupRequest,
     session: AsyncSession = Depends(get_db_session)
 ):
     """Создание группы прав с доступами"""
@@ -199,13 +199,13 @@ async def delete_group(
 
 # ========== Conflicts ==========
 
-@router.post("/conflicts", response_model=list[CreateConflictOut], status_code=status.HTTP_201_CREATED)
+@router.post("/conflicts", response_model=list[CreateConflictResponse], status_code=status.HTTP_201_CREATED)
 @handle_errors(
     value_error_status=status.HTTP_400_BAD_REQUEST,
     error_message_prefix="при создании конфликта"
 )
 async def create_conflict(
-    conflict_in: CreateConflictIn,
+    conflict_in: CreateConflictRequest,
     session: AsyncSession = Depends(get_db_session),
     redis_conn: redis.Redis = Depends(get_redis_connection)
 ):
@@ -223,7 +223,7 @@ async def create_conflict(
 @router.delete("/conflicts", status_code=status.HTTP_204_NO_CONTENT)
 @handle_errors(error_message_prefix="при удалении конфликта")
 async def delete_conflict(
-    conflict_in: DeleteConflictIn,
+    conflict_in: DeleteConflictRequest,
     session: AsyncSession = Depends(get_db_session),
     redis_conn: redis.Redis = Depends(get_redis_connection)
 ):

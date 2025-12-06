@@ -16,13 +16,13 @@ router = APIRouter()
 @handle_service_errors("Access Control Service")
 async def get_all_resources(
     access_control_client: AccessControlClientProtocol = Depends(get_access_control_client),
-):
+) -> list[Resource]:
     """Получение всех ресурсов"""
     logger.debug("Получен запрос на получение всех ресурсов")
 
     response = await access_control_client.get_all_resources()
 
-    return [Resource(**item) for item in response]
+    return response
 
 
 @router.get("/resources/{resource_id}", response_model=Resource)
@@ -30,11 +30,11 @@ async def get_all_resources(
 async def get_resource(
     resource_id: int,
     access_control_client: AccessControlClientProtocol = Depends(get_access_control_client),
-):
+) -> Resource:
     """Получение ресурса по ID"""
     logger.debug(f"Получен запрос на получение ресурса: resource_id={resource_id}")
 
     response = await access_control_client.get_resource(resource_id=resource_id)
 
-    return Resource(**response)
+    return response
 

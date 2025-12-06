@@ -7,9 +7,9 @@ from access_control_service.db.access import Access
 from access_control_service.db.resource import Resource
 from access_control_service.db.group import Group
 from access_control_service.models.models import (
-    CreateAccessIn,
-    CreateAccessOut,
-    GetAccessGroupsOut,
+    CreateAccessRequest,
+    CreateAccessResponse,
+    GetAccessGroupsResponse,
     Resource as ResourceModel,
     Group as GroupModel,
     Access as AccessModel,
@@ -23,8 +23,8 @@ class AccessService:
 
     @staticmethod
     async def create_access(
-        session: AsyncSession, access_data: CreateAccessIn
-    ) -> CreateAccessOut:
+        session: AsyncSession, access_data: CreateAccessRequest
+    ) -> CreateAccessResponse:
         """Создание доступа с привязкой ресурсов."""
 
         logger.debug(
@@ -86,7 +86,7 @@ class AccessService:
             for res in access.resources
         ]
 
-        return CreateAccessOut(
+        return CreateAccessResponse(
             id=access.id,
             name=access.name,
             resources=resources_out,
@@ -130,7 +130,7 @@ class AccessService:
     @staticmethod
     async def get_groups_containing_access(
         session: AsyncSession, access_id: int
-    ) -> GetAccessGroupsOut:
+    ) -> GetAccessGroupsResponse:
         """Получение всех групп, содержащих данный доступ."""
 
         logger.debug(f"Получение групп для доступа: access_id={access_id}")
@@ -171,5 +171,5 @@ class AccessService:
             f"Найдено групп для доступа {access_id}: {len(groups)}"
         )
 
-        return GetAccessGroupsOut(access_id=access_id, groups=groups)
+        return GetAccessGroupsResponse(access_id=access_id, groups=groups)
 

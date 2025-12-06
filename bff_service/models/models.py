@@ -4,33 +4,33 @@ from pydantic import BaseModel, Field
 
 
 # Модели для запроса доступа
-class RequestAccessIn(BaseModel):
+class RequestAccessRequest(BaseModel):
     """Модель для создания заявки на доступ/группу прав"""
     user_id: int = Field(gt=0, description="ID пользователя")
     permission_type: Literal["access", "group"] = Field(description="Тип права: access или group")
     item_id: int = Field(gt=0, description="ID доступа или группы")
 
 
-class RequestAccessOut(BaseModel):
+class RequestAccessResponse(BaseModel):
     """Модель ответа при создании заявки"""
     status: str = Field(default="accepted", description="Статус обработки заявки")
     request_id: str = Field(description="UUID заявки для отслеживания")
 
 
 # Модели для отзыва прав
-class RevokePermissionIn(BaseModel):
+class RevokePermissionRequest(BaseModel):
     """Модель для отзыва права"""
     permission_type: Literal["access", "group"] = Field(description="Тип права")
     item_id: int = Field(gt=0, description="ID доступа или группы")
 
 
-class RevokePermissionOut(BaseModel):
+class RevokePermissionResponse(BaseModel):
     """Модель ответа при отзыве права"""
     status: str = Field(default="revoked", description="Статус отзыва права")
 
 
 # Модели для получения прав
-class PermissionOut(BaseModel):
+class PermissionResponse(BaseModel):
     """Модель для отдельного права с деталями"""
     id: int
     permission_type: Literal["access", "group"]
@@ -40,15 +40,15 @@ class PermissionOut(BaseModel):
     assigned_at: datetime | None = None
 
 
-class GetUserPermissionsOut(BaseModel):
+class GetUserPermissionsResponse(BaseModel):
     """Модель для получения всех прав пользователя"""
     user_id: int
-    groups: list[PermissionOut] = Field(default_factory=list)
-    accesses: list[PermissionOut] = Field(default_factory=list)
+    groups: list[PermissionResponse] = Field(default_factory=list)
+    accesses: list[PermissionResponse] = Field(default_factory=list)
 
 
 # Модели для работы с заявками (трекинг)
-class UserPermissionOut(BaseModel):
+class UserPermissionResponse(BaseModel):
     """Модель заявки/права пользователя"""
     id: int
     user_id: int
@@ -87,7 +87,7 @@ class Conflict(BaseModel):
     group_id2: int
 
 
-class GetConflictsOut(BaseModel):
+class GetConflictsResponse(BaseModel):
     """Модель для получения всех конфликтов"""
     conflicts: list[Conflict] = Field(default_factory=list)
 

@@ -6,9 +6,9 @@ from sqlalchemy.orm import selectinload
 from access_control_service.db.group import Group
 from access_control_service.db.access import Access
 from access_control_service.models.models import (
-    CreateGroupIn,
-    CreateGroupOut,
-    GetGroupAccessesOut,
+    CreateGroupRequest,
+    CreateGroupResponse,
+    GetGroupAccessesResponse,
     Access as AccessModel,
     Resource as ResourceModel,
 )
@@ -21,8 +21,8 @@ class GroupService:
 
     @staticmethod
     async def create_group(
-        session: AsyncSession, group_data: CreateGroupIn
-    ) -> CreateGroupOut:
+        session: AsyncSession, group_data: CreateGroupRequest
+    ) -> CreateGroupResponse:
         """Создание группы прав с привязкой доступов."""
 
         logger.debug(
@@ -77,7 +77,7 @@ class GroupService:
             for acc in group.accesses
         ]
 
-        return CreateGroupOut(
+        return CreateGroupResponse(
             id=group.id,
             name=group.name,
             accesses=accesses_out,
@@ -128,7 +128,7 @@ class GroupService:
     @staticmethod
     async def get_group_accesses(
         session: AsyncSession, group_id: int
-    ) -> GetGroupAccessesOut:
+    ) -> GetGroupAccessesResponse:
         """Получение всех доступов группы."""
 
         logger.debug(f"Получение доступов для группы: group_id={group_id}")
@@ -168,7 +168,7 @@ class GroupService:
             f"Найдено доступов для группы {group_id}: {len(accesses)}"
         )
 
-        return GetGroupAccessesOut(group_id=group_id, accesses=accesses)
+        return GetGroupAccessesResponse(group_id=group_id, accesses=accesses)
 
     @staticmethod
     async def add_access_to_group(

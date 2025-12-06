@@ -16,13 +16,13 @@ router = APIRouter()
 @handle_service_errors("Access Control Service")
 async def get_all_accesses(
     access_control_client: AccessControlClientProtocol = Depends(get_access_control_client),
-):
+) -> list[Access]:
     """Получение всех доступов"""
     logger.debug("Получен запрос на получение всех доступов")
 
     response = await access_control_client.get_all_accesses()
 
-    return [Access(**item) for item in response]
+    return response
 
 
 @router.get("/accesses/{access_id}", response_model=Access)
@@ -30,11 +30,11 @@ async def get_all_accesses(
 async def get_access(
     access_id: int,
     access_control_client: AccessControlClientProtocol = Depends(get_access_control_client),
-):
+) -> Access:
     """Получение доступа по ID"""
     logger.debug(f"Получен запрос на получение доступа: access_id={access_id}")
 
     response = await access_control_client.get_access(access_id=access_id)
 
-    return Access(**response)
+    return response
 

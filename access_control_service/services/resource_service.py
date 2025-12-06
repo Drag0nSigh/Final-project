@@ -5,8 +5,8 @@ from sqlalchemy.orm import selectinload
 
 from access_control_service.db.resource import Resource
 from access_control_service.models.models import (
-    CreateResourceIn,
-    CreateResourceOut,
+    CreateResourceRequest,
+    CreateResourceResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ class ResourceService:
     """Сервис для работы с ресурсами."""
 
     @staticmethod
-    async def create_resource(session: AsyncSession, resource_data: CreateResourceIn) -> CreateResourceOut:
+    async def create_resource(session: AsyncSession, resource_data: CreateResourceRequest) -> CreateResourceResponse:
         """Создание ресурса в БД."""
         
         logger.debug(f"Создание ресурса: name={resource_data.name}, type={resource_data.type}")
@@ -31,7 +31,7 @@ class ResourceService:
         await session.refresh(resource)
 
         logger.debug(f"Ресурс создан: id={resource.id}, name={resource.name}")
-        return CreateResourceOut(
+        return CreateResourceResponse(
             id=resource.id,
             name=resource.name,
             type=resource.type,
