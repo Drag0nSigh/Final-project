@@ -113,7 +113,7 @@ class AccessServiceAdmin:
             )
 
         access_name = access_with_groups.name
-        await session.delete(access_with_groups)
+        session.delete(access_with_groups)
         await session.flush()
 
         logger.debug(f"Доступ удален: id={access_id}, name={access_name}")

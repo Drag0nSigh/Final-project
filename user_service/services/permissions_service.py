@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Literal, Any
+from typing import Any
 from datetime import datetime
 
 import redis.asyncio as redis
@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from user_service.db.userpermission import UserPermission
+from user_service.models.enums import PermissionType, PermissionStatus
 
 logger = logging.getLogger(__name__)
 from user_service.services.cache import (
@@ -53,19 +54,19 @@ class PermissionService:
         
         stmt = select(UserPermission).where(
             UserPermission.user_id == request_data.user_id,
-            UserPermission.permission_type == request_data.permission_type,
+            UserPermission.permission_type == request_data.permission_type.value,
             UserPermission.item_id == request_data.item_id,
         )
         result = await self.session.execute(stmt)
         existing_permission = result.scalar_one_or_none()
         
-        if existing_permission and existing_permission.status in {"active", "pending"}:
+        if existing_permission and existing_permission.status in {PermissionStatus.ACTIVE.value, PermissionStatus.PENDING.value}:
             raise ValueError("Заявка уже находится в обработке или право активно")
         
         new_request_id = str(uuid4())
         
-        if existing_permission and existing_permission.status in {"revoked", "rejected"}:
-            existing_permission.status = "pending"
+        if existing_permission and existing_permission.status in {PermissionStatus.REVOKED.value, PermissionStatus.REJECTED.value}:
+            existing_permission.status = PermissionStatus.PENDING.value
             existing_permission.request_id = new_request_id
             existing_permission.assigned_at = None
             logger.debug(
@@ -74,10 +75,10 @@ class PermissionService:
         else:
             permission_record = UserPermission(
                 user_id=request_data.user_id,
-                permission_type=request_data.permission_type,
+                permission_type=request_data.permission_type.value,
                 item_id=request_data.item_id,
                 item_name=None,
-                status="pending",
+                status=PermissionStatus.PENDING.value,
                 request_id=new_request_id,
                 assigned_at=None,
             )
@@ -100,7 +101,7 @@ class PermissionService:
         accesses = []
         for permission in permissions:
             schema = permission_model_to_schema(permission)
-            if permission.permission_type == "group":
+            if permission.permission_type == PermissionType.GROUP.value:
                 groups.append(schema)
             else:
                 accesses.append(schema)
@@ -121,8 +122,8 @@ class PermissionService:
 
         stmt = select(UserPermission).where(
             UserPermission.user_id == user_id,
-            UserPermission.permission_type == "group",
-            UserPermission.status == "active",
+            UserPermission.permission_type == PermissionType.GROUP.value,
+            UserPermission.status == PermissionStatus.ACTIVE.value,
         )
         result = await self.session.execute(stmt)
         permissions = result.scalars().all()
@@ -142,7 +143,7 @@ class PermissionService:
         request_id: str,
         approved: bool,
         user_id: int,
-        permission_type: Literal["access", "group"],
+        permission_type: PermissionType,
         item_id: int,
     ) -> UserPermission | None:
         """Применяет результат валидации к заявке пользователя."""
@@ -156,7 +157,7 @@ class PermissionService:
 
         if (
             permission.user_id != user_id
-            or permission.permission_type != permission_type
+            or permission.permission_type != permission_type.value
             or permission.item_id != item_id
         ):
             logger.warning(
@@ -167,12 +168,12 @@ class PermissionService:
             return None
 
         if approved:
-            permission.status = "active"
+            permission.status = PermissionStatus.ACTIVE.value
             permission.assigned_at = datetime.utcnow()
         else:
-            permission.status = "rejected"
+            permission.status = PermissionStatus.REJECTED.value
 
-        if self.redis_conn is not None and permission_type == "group":
+        if self.redis_conn is not None and permission_type == PermissionType.GROUP:
             await invalidate_user_groups_cache(self.redis_conn, user_id)
             logger.debug(
                 f"Кэш активных групп инвалидирован: user_id={user_id} (из-за изменения статуса заявки {request_id})"
@@ -183,16 +184,16 @@ class PermissionService:
     async def revoke_permission(
         self,
         user_id: int,
-        permission_type: Literal["access", "group"],
+        permission_type: PermissionType,
         item_id: int,
     ) -> UserPermission | None:
         """Переводит право пользователя в статус ``revoked`` и очищает кэш."""
 
         stmt = select(UserPermission).where(
             UserPermission.user_id == user_id,
-            UserPermission.permission_type == permission_type,
+            UserPermission.permission_type == permission_type.value,
             UserPermission.item_id == item_id,
-            UserPermission.status.in_(["active", "pending"]),
+            UserPermission.status.in_([PermissionStatus.ACTIVE.value, PermissionStatus.PENDING.value]),
         )
         result = await self.session.execute(stmt)
         permission = result.scalar_one_or_none()
@@ -200,10 +201,10 @@ class PermissionService:
         if permission is None:
             return None
 
-        permission.status = "revoked"
+        permission.status = PermissionStatus.REVOKED.value
         permission.assigned_at = datetime.utcnow()
 
-        if self.redis_conn is not None and permission.permission_type == "group":
+        if self.redis_conn is not None and permission.permission_type == PermissionType.GROUP.value:
             await invalidate_user_groups_cache(self.redis_conn, user_id)
             logger.debug(
                 f"Кэш активных групп инвалидирован: user_id={user_id} (из-за отзыва группы permission_type={permission.permission_type}, item_id={permission.item_id})"

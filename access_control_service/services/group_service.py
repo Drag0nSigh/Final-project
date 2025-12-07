@@ -253,7 +253,7 @@ class GroupService:
                 f"Группа с ID {group_id} не может быть удалена, так как имеет конфликты"
             )
 
-        await session.delete(group)
+        session.delete(group)
         await session.flush()
 
 

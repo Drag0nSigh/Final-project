@@ -4,6 +4,15 @@ from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 import redis.asyncio as redis
 from aio_pika.abc import AbstractConnection, AbstractChannel, AbstractQueue
 
+from user_service.models.models import (
+    RequestAccessRequest,
+    RequestAccessResponse,
+    GetUserPermissionsResponse,
+    GetActiveGroupsResponse,
+)
+from user_service.models.enums import PermissionType
+from user_service.db.userpermission import UserPermission
+
 
 class DatabaseProtocol(Protocol):
 
@@ -60,9 +69,42 @@ class RabbitMQManagerProtocol(Protocol):
     async def publish_validation_request(
         self,
         user_id: int,
-        permission_type: str,
+        permission_type: PermissionType,
         item_id: int,
         request_id: str,
     ) -> None:
+        ...
+
+
+class PermissionServiceProtocol(Protocol):
+
+    async def create_request(
+        self,
+        request_data: RequestAccessRequest,
+    ) -> RequestAccessResponse:
+        ...
+
+    async def get_permissions(self, user_id: int) -> GetUserPermissionsResponse:
+        ...
+
+    async def get_active_groups(self, user_id: int) -> GetActiveGroupsResponse:
+        ...
+
+    async def apply_validation_result(
+        self,
+        request_id: str,
+        approved: bool,
+        user_id: int,
+        permission_type: PermissionType,
+        item_id: int,
+    ) -> UserPermission | None:
+        ...
+
+    async def revoke_permission(
+        self,
+        user_id: int,
+        permission_type: PermissionType,
+        item_id: int,
+    ) -> UserPermission | None:
         ...
 

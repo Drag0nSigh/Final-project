@@ -6,8 +6,14 @@ import logging
 import aio_pika
 from aio_pika.abc import AbstractQueue
 
-from user_service.services.permissions_service import PermissionService
-from user_service.db.protocols import DatabaseProtocol, RedisClientProtocol, RabbitMQManagerProtocol
+from user_service.db.protocols import (
+    DatabaseProtocol,
+    RedisClientProtocol,
+    RabbitMQManagerProtocol,
+    PermissionServiceProtocol,
+)
+from user_service.dependencies import create_permission_service
+from user_service.models.enums import PermissionType
 
 logger = logging.getLogger(__name__)
 
@@ -78,20 +84,29 @@ class ResultConsumer:
                 request_id = result_data.get("request_id")
                 approved = result_data.get("approved")
                 user_id = result_data.get("user_id")
-                permission_type = result_data.get("permission_type")
+                permission_type_str = result_data.get("permission_type")
                 item_id = result_data.get("item_id")
 
-                if not all([request_id, approved is not None, user_id, permission_type, item_id]):
+                if not all([request_id, approved is not None, user_id, permission_type_str, item_id]):
                     logger.error(
                         f"Неполные данные в сообщении result_queue: request_id={request_id}, "
-                        f"approved={approved}, user_id={user_id}, permission_type={permission_type}, item_id={item_id}"
+                        f"approved={approved}, user_id={user_id}, permission_type={permission_type_str}, item_id={item_id}"
+                    )
+                    await message.nack(requeue=False)
+                    return
+
+                try:
+                    permission_type = PermissionType(permission_type_str)
+                except ValueError:
+                    logger.error(
+                        f"Некорректный permission_type в сообщении: {permission_type_str}"
                     )
                     await message.nack(requeue=False)
                     return
 
                 logger.debug(
                     f"Получен результат валидации: request_id={request_id}, approved={approved}, "
-                    f"user_id={user_id}, permission_type={permission_type}, item_id={item_id}"
+                    f"user_id={user_id}, permission_type={permission_type.value}, item_id={item_id}"
                 )
 
                 if self._db.AsyncSessionLocal is None:
@@ -102,7 +117,9 @@ class ResultConsumer:
                 async with self._db.AsyncSessionLocal() as session:
                     try:
                         redis_conn = self._redis_client.connection
-                        service = PermissionService(session=session, redis_conn=redis_conn)
+                        service: PermissionServiceProtocol = create_permission_service(
+                            session=session, redis_conn=redis_conn
+                        )
 
                         permission = await service.apply_validation_result(
                             request_id=request_id,

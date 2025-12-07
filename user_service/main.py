@@ -5,8 +5,8 @@ import asyncio
 import logging
 import sys
 
-from user_service.app.routes import permissions, health, admin
-from user_service.app.dependencies import get_database, get_redis_client, get_rabbitmq_manager
+from user_service.routes import permissions, health, admin
+from user_service.dependencies import get_database, get_redis_client, get_rabbitmq_manager
 from user_service.services.result_consumer import ResultConsumer
 from user_service.config.settings import get_settings
 
@@ -37,14 +37,14 @@ async def lifespan(app: FastAPI):
     try:
         await db.connect()
         await db.init_db()
-        logger.info("База данных подключена и схема инициализирована")
+        logger.debug("База данных подключена и схема инициализирована")
     except Exception:
         logger.exception("Не удалось подключиться к базе данных")
         raise
 
     try:
         await redis_client.connect()
-        logger.info("Redis соединение установлено")
+        logger.debug("Redis соединение установлено")
     except Exception:  
         logger.exception("Не удалось подключиться к Redis")
         await db.close()
@@ -52,7 +52,7 @@ async def lifespan(app: FastAPI):
 
     try:
         await rabbitmq_manager.connect()
-        logger.info("RabbitMQ менеджер инициализирован")
+        logger.debug("RabbitMQ менеджер инициализирован")
     except Exception:  
         logger.exception("Не удалось инициализировать RabbitMQ менеджер")
         await redis_client.close()
@@ -68,7 +68,7 @@ async def lifespan(app: FastAPI):
     consumer_task: asyncio.Task | None = None
     try:
         consumer_task = asyncio.create_task(result_consumer.start_consuming())
-        logger.info("Consumer для result_queue запущен как фоновая задача")
+        logger.debug("Consumer для result_queue запущен как фоновая задача")
     except Exception:
         logger.exception("Не удалось запустить consumer для result_queue")
         await rabbitmq_manager.close()
@@ -89,25 +89,25 @@ async def lifespan(app: FastAPI):
                         await consumer_task
                     except asyncio.CancelledError:
                         pass
-                logger.info("Consumer для result_queue остановлен")
+                logger.debug("Consumer для result_queue остановлен")
             except Exception:
                 logger.exception("Ошибка при остановке consumer")
 
         try:
             await rabbitmq_manager.close()
-            logger.info("RabbitMQ соединение закрыто")
+            logger.debug("RabbitMQ соединение закрыто")
         except Exception:  
             logger.exception("Ошибка при закрытии RabbitMQ соединения")
 
         try:
             await redis_client.close()
-            logger.info("Redis соединение закрыто")
+            logger.debug("Redis соединение закрыто")
         except Exception:  
             logger.exception("Ошибка при закрытии Redis соединения")
 
         try:
             await db.close()
-            logger.info("База данных соединение закрыто")
+            logger.debug("База данных соединение закрыто")
         except Exception:  
             logger.exception("Ошибка при закрытии базы данных соединения")
 
@@ -119,17 +119,9 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Для MVP разрешаем все
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
-# Подключение роутов
+
 app.include_router(health.router, prefix="/health", tags=["Health"])
 app.include_router(permissions.router, prefix="", tags=["Permissions"])
-app.include_router(admin.router, tags=["Admin"])
+app.include_router(admin.router, prefix="/admin", tags=["Admin"])
 

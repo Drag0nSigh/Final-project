@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status
 from datetime import datetime
 from sqlalchemy import text
 
-from user_service.app.dependencies import get_database, get_redis_client, get_rabbitmq_manager
+from user_service.dependencies import get_database, get_redis_client, get_rabbitmq_manager
 
 router = APIRouter()
 

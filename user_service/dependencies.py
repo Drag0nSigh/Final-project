@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 from functools import lru_cache
-from typing import AsyncGenerator, cast
+from typing import AsyncGenerator, cast, Any
 
 import redis.asyncio as redis
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,7 +15,10 @@ from user_service.db.protocols import (
     DatabaseProtocol,
     RedisClientProtocol,
     RabbitMQManagerProtocol,
+    PermissionServiceProtocol,
 )
+from user_service.services.permissions_service import PermissionService
+from fastapi import Depends
 
 
 @lru_cache(maxsize=1)
@@ -37,11 +41,23 @@ def get_rabbitmq_manager() -> RabbitMQManagerProtocol:
     return RabbitMQManager()
 
 
+_db_connect_lock: asyncio.Lock | None = None
+
+
+def _get_db_connect_lock() -> asyncio.Lock:
+    global _db_connect_lock
+    if _db_connect_lock is None:
+        _db_connect_lock = asyncio.Lock()
+    return _db_connect_lock
+
+
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     db = cast(Database, get_database())
     
     if db.AsyncSessionLocal is None:
-        await db.connect()
+        async with _get_db_connect_lock():
+            if db.AsyncSessionLocal is None:
+                await db.connect()
     
     async with db.AsyncSessionLocal() as session:
         try:
@@ -56,3 +72,18 @@ async def get_redis_connection() -> AsyncGenerator[redis.Redis, None]:
     redis_client = get_redis_client()
     connection = redis_client.connection
     yield connection
+
+
+def get_permission_service(
+    session: AsyncSession = Depends(get_db_session),
+    redis_conn: redis.Redis[Any] = Depends(get_redis_connection),
+) -> PermissionServiceProtocol:
+    return PermissionService(session=session, redis_conn=redis_conn)
+
+
+def create_permission_service(
+    session: AsyncSession,
+    redis_conn: redis.Redis[Any] | None = None,
+) -> PermissionServiceProtocol:
+    return PermissionService(session=session, redis_conn=redis_conn)
+

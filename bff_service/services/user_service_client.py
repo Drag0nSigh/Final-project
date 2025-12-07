@@ -2,6 +2,7 @@ import logging
 import httpx
 
 from bff_service.models.models import RequestAccessResponse, RevokePermissionResponse, GetUserPermissionsResponse
+from bff_service.services.protocols import HTTPClientProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -9,10 +10,19 @@ logger = logging.getLogger(__name__)
 class UserServiceClient:
     """HTTP клиент для взаимодействия с User Service."""
 
-    def __init__(self, base_url: str, timeout: float = 30.0):
+    def __init__(
+        self,
+        base_url: str,
+        timeout: float = 30.0,
+        http_client: HTTPClientProtocol | None = None,
+    ):
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
-        self.client = httpx.AsyncClient(base_url=self.base_url, timeout=self.timeout)
+        self.client: HTTPClientProtocol = (
+            http_client
+            if http_client is not None
+            else httpx.AsyncClient(base_url=self.base_url, timeout=self.timeout)
+        )
 
     async def request_access(
         self, user_id: int, permission_type: str, item_id: int

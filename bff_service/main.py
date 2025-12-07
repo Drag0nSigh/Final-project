@@ -5,8 +5,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from bff_service.app.routes import permissions, health, resources, accesses, groups, conflicts
-from bff_service.app.dependencies import close_all_clients
+from bff_service.routes import permissions, health, resources, accesses, groups, conflicts
+from bff_service.dependencies import close_all_clients
 from bff_service.config.settings import get_settings
 
 settings = get_settings()
@@ -41,20 +41,11 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Для MVP разрешаем все
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 app.include_router(health.router, prefix="/health", tags=["Health"])
 app.include_router(permissions.router, prefix="", tags=["Permissions"])
-app.include_router(resources.router, prefix="", tags=["Resources"])
-app.include_router(accesses.router, prefix="", tags=["Accesses"])
-app.include_router(groups.router, prefix="", tags=["Groups"])
-app.include_router(conflicts.router, prefix="", tags=["Conflicts"])
-
+app.include_router(resources.router, prefix="/resources", tags=["Resources"])
+app.include_router(accesses.router, prefix="/accesses", tags=["Accesses"])
+app.include_router(groups.router, prefix="/groups", tags=["Groups"])
+app.include_router(conflicts.router, prefix="/conflicts", tags=["Conflicts"])
 

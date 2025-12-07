@@ -94,7 +94,7 @@ class ConflictServiceAdmin:
             conflict = result.scalar_one_or_none()
 
             if conflict is not None:
-                await session.delete(conflict)
+                session.delete(conflict)
                 await session.flush()
                 deleted_count += 1
                 logger.debug(f"Удален конфликт: group_id1={g1}, group_id2={g2}")

@@ -6,10 +6,10 @@ from user_service.models.models import (
     CreateUserRequest,
     CreateUserResponse
 )
-from user_service.app.dependencies import get_db_session
+from user_service.dependencies import get_db_session
 from user_service.db.user import User
 
-router = APIRouter(prefix="/admin", tags=["Admin"])
+router = APIRouter()
 
 
 @router.post("/users", response_model=CreateUserResponse, status_code=status.HTTP_201_CREATED)
@@ -33,6 +33,4 @@ async def create_user(user_data: CreateUserRequest, session: AsyncSession = Depe
     await session.refresh(new_user)
     
     return CreateUserResponse(id=new_user.id, username=new_user.username)
-
-
 

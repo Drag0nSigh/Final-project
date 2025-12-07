@@ -1,12 +1,13 @@
-from typing import Literal
 from pydantic import BaseModel, Field, ConfigDict
+
+from validation_service.models.enums import PermissionType
 
 
 class ValidationRequest(BaseModel):
     """Модель запроса на валидацию из RabbitMQ"""
     
     user_id: int = Field(gt=0, description="ID пользователя")
-    permission_type: Literal["access", "group"] = Field(
+    permission_type: PermissionType = Field(
         description="Тип права: 'access' - доступ, 'group' - группа"
     )
     item_id: int = Field(gt=0, description="ID доступа или группы")
@@ -34,7 +35,7 @@ class ValidationResult(BaseModel):
         description="Причина отклонения (если approved=False)"
     )
     user_id: int = Field(description="ID пользователя")
-    permission_type: Literal["access", "group"] = Field(
+    permission_type: PermissionType = Field(
         description="Тип права: 'access' - доступ, 'group' - группа"
     )
     item_id: int = Field(description="ID доступа или группы")

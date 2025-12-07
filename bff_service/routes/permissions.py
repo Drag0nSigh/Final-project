@@ -10,8 +10,8 @@ from bff_service.models.models import (
     GetUserPermissionsResponse,
 )
 from bff_service.services.protocols import UserServiceClientProtocol
-from bff_service.app.dependencies import get_user_service_client
-from bff_service.app.utils.error_handlers import handle_service_errors
+from bff_service.dependencies import get_user_service_client
+from bff_service.utils.error_handlers import handle_service_errors
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,6 @@ async def request_access(
     request: RequestAccessRequest,
     user_service_client: UserServiceClientProtocol = Depends(get_user_service_client),
 ) -> RequestAccessResponse:
-    """Создание заявки на получение доступа или группы прав"""
     logger.debug(
         f"Получен запрос на создание заявки: user={request.user_id} "
         f"permission_type={request.permission_type} item_id={request.item_id}"
@@ -46,7 +45,6 @@ async def revoke_permission(
     request: RevokePermissionRequest,
     user_service_client: UserServiceClientProtocol = Depends(get_user_service_client),
 ) -> RevokePermissionResponse:
-    """Отзыв права у пользователя"""
     logger.debug(
         f"Получен запрос на отзыв права: user={user_id} "
         f"permission_type={request.permission_type} item_id={request.item_id}"
@@ -67,7 +65,6 @@ async def get_user_permissions(
     user_id: int,
     user_service_client: UserServiceClientProtocol = Depends(get_user_service_client),
 ) -> GetUserPermissionsResponse:
-    """Получение всех прав пользователя"""
     logger.debug(f"Получение прав пользователя: user={user_id}")
 
     response = await user_service_client.get_user_permissions(user_id=user_id)

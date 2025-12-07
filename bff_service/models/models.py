@@ -1,13 +1,14 @@
-from typing import Literal
 from datetime import datetime
 from pydantic import BaseModel, Field
+
+from bff_service.models.enums import PermissionType, PermissionStatus
 
 
 # Модели для запроса доступа
 class RequestAccessRequest(BaseModel):
     """Модель для создания заявки на доступ/группу прав"""
     user_id: int = Field(gt=0, description="ID пользователя")
-    permission_type: Literal["access", "group"] = Field(description="Тип права: access или group")
+    permission_type: PermissionType = Field(description="Тип права: access или group")
     item_id: int = Field(gt=0, description="ID доступа или группы")
 
 
@@ -20,7 +21,7 @@ class RequestAccessResponse(BaseModel):
 # Модели для отзыва прав
 class RevokePermissionRequest(BaseModel):
     """Модель для отзыва права"""
-    permission_type: Literal["access", "group"] = Field(description="Тип права")
+    permission_type: PermissionType = Field(description="Тип права")
     item_id: int = Field(gt=0, description="ID доступа или группы")
 
 
@@ -33,7 +34,7 @@ class RevokePermissionResponse(BaseModel):
 class PermissionResponse(BaseModel):
     """Модель для отдельного права с деталями"""
     id: int
-    permission_type: Literal["access", "group"]
+    permission_type: PermissionType
     item_id: int
     item_name: str | None = None  # Название доступа/группы (опционально)
     status: str
@@ -52,9 +53,9 @@ class UserPermissionResponse(BaseModel):
     """Модель заявки/права пользователя"""
     id: int
     user_id: int
-    permission_type: Literal["access", "group"]
+    permission_type: PermissionType
     item_id: int
-    status: Literal["active", "pending", "revoked", "rejected"]
+    status: PermissionStatus
     request_id: str
     assigned_at: datetime | None = None
 

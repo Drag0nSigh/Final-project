@@ -4,20 +4,19 @@ from fastapi import APIRouter, Depends
 
 from bff_service.models.models import Access
 from bff_service.services.protocols import AccessControlClientProtocol
-from bff_service.app.dependencies import get_access_control_client
-from bff_service.app.utils.error_handlers import handle_service_errors
+from bff_service.dependencies import get_access_control_client
+from bff_service.utils.error_handlers import handle_service_errors
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
-@router.get("/accesses", response_model=list[Access])
+@router.get("", response_model=list[Access])
 @handle_service_errors("Access Control Service")
 async def get_all_accesses(
     access_control_client: AccessControlClientProtocol = Depends(get_access_control_client),
 ) -> list[Access]:
-    """Получение всех доступов"""
     logger.debug("Получен запрос на получение всех доступов")
 
     response = await access_control_client.get_all_accesses()
@@ -25,13 +24,12 @@ async def get_all_accesses(
     return response
 
 
-@router.get("/accesses/{access_id}", response_model=Access)
+@router.get("/{access_id}", response_model=Access)
 @handle_service_errors("Access Control Service")
 async def get_access(
     access_id: int,
     access_control_client: AccessControlClientProtocol = Depends(get_access_control_client),
 ) -> Access:
-    """Получение доступа по ID"""
     logger.debug(f"Получен запрос на получение доступа: access_id={access_id}")
 
     response = await access_control_client.get_access(access_id=access_id)

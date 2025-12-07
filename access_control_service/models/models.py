@@ -1,5 +1,6 @@
-from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
+
+from access_control_service.models.enums import ResourceType
 
 
 # Pydantic модели для ответов (Output)
@@ -39,7 +40,7 @@ class Conflict(BaseModel):
 class CreateResourceRequest(BaseModel):
     """Модель для создания ресурса"""
     name: str = Field(..., min_length=1, max_length=100, description="Название ресурса")
-    type: Literal["API", "Database", "Service"] = Field(..., description="Тип ресурса")
+    type: ResourceType = Field(..., description="Тип ресурса")
     description: str | None = Field(None, description="Описание ресурса")
 
 

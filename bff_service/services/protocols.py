@@ -1,4 +1,4 @@
-from typing import Protocol
+from typing import Protocol, Any
 
 from bff_service.models.models import (
     Resource,
@@ -9,6 +9,26 @@ from bff_service.models.models import (
     RevokePermissionResponse,
     GetUserPermissionsResponse,
 )
+
+
+class HTTPClientProtocol(Protocol):
+    """Протокол для HTTP клиента."""
+
+    async def get(self, url: str, **kwargs: Any) -> Any:
+        """Выполнить GET запрос."""
+        ...
+
+    async def post(self, url: str, **kwargs: Any) -> Any:
+        """Выполнить POST запрос."""
+        ...
+
+    async def request(self, method: str, url: str, **kwargs: Any) -> Any:
+        """Выполнить HTTP запрос с указанным методом."""
+        ...
+
+    async def aclose(self) -> None:
+        """Закрыть HTTP клиент."""
+        ...
 
 
 class UserServiceClientProtocol(Protocol):
@@ -27,6 +47,39 @@ class UserServiceClientProtocol(Protocol):
         ...
 
     async def close(self) -> None:
+        ...
+
+
+class ResourceClientProtocol(Protocol):
+
+    async def get_all(self) -> list[Resource]:
+        ...
+
+    async def get_by_id(self, resource_id: int) -> Resource:
+        ...
+
+
+class AccessClientProtocol(Protocol):
+
+    async def get_all(self) -> list[Access]:
+        ...
+
+    async def get_by_id(self, access_id: int) -> Access:
+        ...
+
+
+class GroupClientProtocol(Protocol):
+
+    async def get_all(self) -> list[Group]:
+        ...
+
+    async def get_by_id(self, group_id: int) -> Group:
+        ...
+
+
+class ConflictClientProtocol(Protocol):
+
+    async def get_all(self) -> GetConflictsResponse:
         ...
 
 

@@ -91,7 +91,7 @@ class ResourceService:
                 f"Ресурс с ID {resource_id} не может быть удален, так как связан с доступами: {access_ids}"
             )
 
-        await session.delete(resource)
+        session.delete(resource)
         await session.flush()
 
         logger.debug(f"Ресурс удален: id={resource_id}, name={resource.name}")

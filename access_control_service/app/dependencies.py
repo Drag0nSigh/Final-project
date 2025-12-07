@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from functools import lru_cache
 from typing import AsyncGenerator, cast
 
@@ -27,11 +28,23 @@ def get_redis_client() -> RedisClientProtocol:
     return RedisClient()
 
 
+_db_connect_lock: asyncio.Lock | None = None
+
+
+def _get_db_connect_lock() -> asyncio.Lock:
+    global _db_connect_lock
+    if _db_connect_lock is None:
+        _db_connect_lock = asyncio.Lock()
+    return _db_connect_lock
+
+
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     db = cast(Database, get_database())
     
     if db.AsyncSessionLocal is None:
-        await db.connect()
+        async with _get_db_connect_lock():
+            if db.AsyncSessionLocal is None:
+                await db.connect()
     
     async with db.AsyncSessionLocal() as session:
         try:

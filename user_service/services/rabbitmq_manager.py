@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Literal
 
 import aio_pika
 from aio_pika.abc import AbstractConnection, AbstractChannel, AbstractQueue
 
 from user_service.config.settings import get_settings
+from user_service.models.enums import PermissionType
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +117,7 @@ class RabbitMQManager:
     async def publish_validation_request(
         self,
         user_id: int,
-        permission_type: Literal["access", "group"],
+        permission_type: PermissionType,
         item_id: int,
         request_id: str,
     ) -> None:
@@ -130,10 +130,9 @@ class RabbitMQManager:
             raise RuntimeError("Очередь validation_queue не объявлена")
 
         try:
-
             message_data = {
                 "user_id": user_id,
-                "permission_type": permission_type,
+                "permission_type": permission_type.value,
                 "item_id": item_id,
                 "request_id": request_id,
             }
