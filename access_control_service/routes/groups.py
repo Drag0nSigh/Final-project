@@ -2,8 +2,8 @@ import redis.asyncio as redis
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from access_control_service.app.dependencies import get_db_session
-from access_control_service.app.dependencies import get_redis_connection
+from access_control_service.dependencies import get_db_session
+from access_control_service.dependencies import get_redis_connection
 from access_control_service.models.models import (
     Group as GroupOut,
     GetGroupAccessesResponse
@@ -13,7 +13,7 @@ from access_control_service.services.cache import (
     get_group_accesses_from_cache,
     set_group_accesses_cache
 )
-from access_control_service.app.utils.error_handlers import handle_errors
+from access_control_service.utils.error_handlers import handle_errors
 
 router = APIRouter()
 
@@ -24,7 +24,6 @@ async def get_group(
     group_id: int,
     session: AsyncSession = Depends(get_db_session)
 ):
-    """Получение группы по ID"""
     group = await GroupService.get_group(session, group_id)
     return GroupOut.model_validate(group)
 
@@ -34,7 +33,6 @@ async def get_group(
 async def get_all_groups(
     session: AsyncSession = Depends(get_db_session)
 ):
-    """Получение всех групп"""
     groups = await GroupService.get_all_groups(session)
     return [GroupOut.model_validate(group) for group in groups]
 
@@ -46,7 +44,6 @@ async def get_accesses_by_group(
     session: AsyncSession = Depends(get_db_session),
     redis_conn: redis.Redis = Depends(get_redis_connection)
 ):
-    """Получение доступов группы"""
     cached_accesses = await get_group_accesses_from_cache(redis_conn, group_id)
     if cached_accesses is not None:
         return GetGroupAccessesResponse.model_validate({

@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from access_control_service.app.dependencies import get_db_session
+from access_control_service.dependencies import get_db_session
 from access_control_service.models.models import (
     Access as AccessOut,
     GetAccessGroupsResponse,
     Resource as ResourceModel,
 )
 from access_control_service.services.access_service import AccessService
-from access_control_service.app.utils.error_handlers import handle_errors
+from access_control_service.utils.error_handlers import handle_errors
 
 router = APIRouter()
 
@@ -19,7 +19,6 @@ async def get_access(
     access_id: int,
     session: AsyncSession = Depends(get_db_session)
 ):
-    """Получение доступа по ID"""
     access = await AccessService.get_access(session, access_id)
     
     resources_out = [
@@ -44,7 +43,6 @@ async def get_access(
 async def get_all_accesses(
     session: AsyncSession = Depends(get_db_session)
 ):
-    """Получение всех доступов"""
     accesses = await AccessService.get_all_accesses(session)
     
     result = []
@@ -75,6 +73,5 @@ async def get_groups_by_access(
     access_id: int,
     session: AsyncSession = Depends(get_db_session)
 ):
-    """Получение групп, содержащих доступ"""
     return await AccessService.get_groups_containing_access(session, access_id)
 

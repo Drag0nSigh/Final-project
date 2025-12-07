@@ -11,11 +11,9 @@ logger = logging.getLogger(__name__)
 
 
 class ConflictService:
-    """Сервис для работы с конфликтами между группами"""
 
     @staticmethod
     async def get_all_conflicts(session: AsyncSession) -> list[ConflictModel]:
-        """Получение всех конфликтов."""
 
         stmt = select(Conflict)
         result = await session.execute(stmt)

@@ -10,13 +10,11 @@ logger = logging.getLogger(__name__)
 
 
 class AccessServiceAdmin:
-    """Служебные методы для управления доступами."""
 
     @staticmethod
     async def add_resource_to_access(
         session: AsyncSession, access_id: int, resource_id: int
     ) -> None:
-        """Добавление ресурса к доступу через association таблицу."""
 
         logger.debug(
             f"Добавление ресурса к доступу: access_id={access_id}, resource_id={resource_id}"
@@ -51,7 +49,6 @@ class AccessServiceAdmin:
     async def remove_resource_from_access(
         session: AsyncSession, access_id: int, resource_id: int
     ) -> None:
-        """Удаление ресурса из доступа."""
         
         logger.debug(
             f"Удаление ресурса из доступа: access_id={access_id}, resource_id={resource_id}"
@@ -87,7 +84,6 @@ class AccessServiceAdmin:
 
     @staticmethod
     async def delete_access(session: AsyncSession, access_id: int) -> None:
-        """Удаление доступа."""
 
         logger.debug(f"Удаление доступа: id={access_id}")
 

@@ -31,7 +31,7 @@ async def request_access(
 
     response = await user_service_client.request_access(
         user_id=request.user_id,
-        permission_type=request.permission_type,
+        permission_type=request.permission_type.value,
         item_id=request.item_id,
     )
 
@@ -52,7 +52,7 @@ async def revoke_permission(
 
     response = await user_service_client.revoke_permission(
         user_id=user_id,
-        permission_type=request.permission_type,
+        permission_type=request.permission_type.value,
         item_id=request.item_id,
     )
 

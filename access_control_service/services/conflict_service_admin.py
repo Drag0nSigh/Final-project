@@ -13,13 +13,11 @@ logger = logging.getLogger(__name__)
 
 
 class ConflictServiceAdmin:
-    """Служебные методы для управления конфликтами."""
 
     @staticmethod
     async def create_conflict(
         session: AsyncSession, conflict_data: CreateConflictRequest
     ) -> list[CreateConflictResponse]:
-        """Создание конфликта между группами с автоматической симметрией."""
 
         group_id1 = conflict_data.group_id1
         group_id2 = conflict_data.group_id2

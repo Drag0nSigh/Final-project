@@ -1,11 +1,10 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
 import sys
 
-from access_control_service.app.routes import resources, accesses, groups, conflicts, health, admin
-from access_control_service.app.dependencies import get_database, get_redis_client
+from access_control_service.routes import resources, accesses, groups, conflicts, health, admin
+from access_control_service.dependencies import get_database, get_redis_client
 from access_control_service.config.settings import get_settings
 
 settings = get_settings()
@@ -26,8 +25,6 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Глобальный lifecycle Access Control Service."""
-
     db = get_database()
     redis_client = get_redis_client()
 
@@ -70,19 +67,12 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Для MVP разрешаем все
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
-# Подключение роутов
+
 app.include_router(health.router, prefix="/health", tags=["Health"])
 app.include_router(resources.router, prefix="/resources", tags=["Resources"])
 app.include_router(accesses.router, prefix="/accesses", tags=["Accesses"])
 app.include_router(groups.router, prefix="/groups", tags=["Groups"])
 app.include_router(conflicts.router, prefix="/conflicts", tags=["Conflicts"])
 app.include_router(admin.router, tags=["Admin"])
+

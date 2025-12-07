@@ -14,7 +14,6 @@ def handle_errors(
     value_error_status: int = status.HTTP_404_NOT_FOUND,
     error_message_prefix: str = ""
 ):
-    """Декоратор для обработки ошибок в эндпоинтах."""
     
     def decorator(func: Callable[P, R]) -> Callable[P, R]:
         @wraps(func)

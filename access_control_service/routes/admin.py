@@ -3,8 +3,8 @@ import redis.asyncio as redis
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from access_control_service.app.dependencies import get_db_session
-from access_control_service.app.dependencies import get_redis_connection
+from access_control_service.dependencies import get_db_session
+from access_control_service.dependencies import get_redis_connection
 from access_control_service.services.cache import (
     invalidate_access_groups_cache,
     invalidate_group_accesses_cache,
@@ -31,7 +31,7 @@ from access_control_service.services.access_service import AccessService
 from access_control_service.services.access_service_admin import AccessServiceAdmin
 from access_control_service.services.group_service import GroupService
 from access_control_service.services.conflict_service_admin import ConflictServiceAdmin
-from access_control_service.app.utils.error_handlers import handle_errors
+from access_control_service.utils.error_handlers import handle_errors
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -42,7 +42,6 @@ async def create_resource(
     resource_in: CreateResourceRequest,
     session: AsyncSession = Depends(get_db_session)
 ):
-    """Создание ресурса (служебный эндпоинт)"""
     return await ResourceService.create_resource(session, resource_in)
 
 
@@ -55,7 +54,6 @@ async def delete_resource(
     resource_id: int,
     session: AsyncSession = Depends(get_db_session)
 ):
-    """Удаление ресурса (служебный эндпоинт)"""
     await ResourceService.delete_resource(session, resource_id)
 
 
@@ -65,7 +63,6 @@ async def create_access(
     access_in: CreateAccessRequest,
     session: AsyncSession = Depends(get_db_session)
 ):
-    """Создание доступа с ресурсами (служебный эндпоинт)"""
     return await AccessService.create_access(session, access_in)
 
 
@@ -77,13 +74,10 @@ async def add_resource_to_access(
     session: AsyncSession = Depends(get_db_session),
     redis_conn: redis.Redis = Depends(get_redis_connection)
 ):
-    """Добавление ресурса к доступу"""
     await AccessServiceAdmin.add_resource_to_access(
         session, access_id, resource_data.resource_id
     )
     
-    # Инвалидируем кэш групп по доступу, так как изменение ресурсов доступа
-    # может повлиять на группы, содержащие этот доступ
     await invalidate_access_groups_cache(redis_conn, access_id)
     
     access = await AccessService.get_access(session, access_id)
@@ -113,13 +107,10 @@ async def remove_resource_from_access(
     session: AsyncSession = Depends(get_db_session),
     redis_conn: redis.Redis = Depends(get_redis_connection)
 ):
-    """Удаление ресурса из доступа"""
     await AccessServiceAdmin.remove_resource_from_access(
         session, access_id, resource_id
     )
     
-    # Инвалидируем кэш групп по доступу, так как изменение ресурсов доступа
-    # может повлиять на группы, содержащие этот доступ
     await invalidate_access_groups_cache(redis_conn, access_id)
 
 
@@ -133,12 +124,9 @@ async def delete_access(
     session: AsyncSession = Depends(get_db_session),
     redis_conn: redis.Redis = Depends(get_redis_connection)
 ):
-    """Удаление доступа"""
     await AccessServiceAdmin.delete_access(session, access_id)
     
-    # Инвалидируем кэш групп по доступу при удалении доступа
     await invalidate_access_groups_cache(redis_conn, access_id)
-
 
 
 @router.post("/groups", response_model=CreateGroupResponse, status_code=status.HTTP_201_CREATED)
@@ -147,7 +135,6 @@ async def create_group(
     group_in: CreateGroupRequest,
     session: AsyncSession = Depends(get_db_session)
 ):
-    """Создание группы прав с доступами"""
     return await GroupService.create_group(session, group_in)
 
 
@@ -159,7 +146,6 @@ async def add_access_to_group(
     session: AsyncSession = Depends(get_db_session),
     redis_conn: redis.Redis = Depends(get_redis_connection)
 ):
-    """Добавление доступа к группе (служебный эндпоинт)"""
     await GroupService.add_access_to_group(session, group_id, access_id)
     
     await invalidate_group_accesses_cache(redis_conn, group_id)
@@ -174,7 +160,6 @@ async def remove_access_from_group(
     session: AsyncSession = Depends(get_db_session),
     redis_conn: redis.Redis = Depends(get_redis_connection)
 ):
-    """Удаление доступа из группы (служебный эндпоинт)"""
     await GroupService.remove_access_from_group(session, group_id, access_id)
     
     await invalidate_group_accesses_cache(redis_conn, group_id)
@@ -191,13 +176,10 @@ async def delete_group(
     session: AsyncSession = Depends(get_db_session),
     redis_conn: redis.Redis = Depends(get_redis_connection)
 ):
-    """Удаление группы (служебный эндпоинт)"""
     await GroupService.delete_group(session, group_id)
     
     await invalidate_group_accesses_cache(redis_conn, group_id)
 
-
-# ========== Conflicts ==========
 
 @router.post("/conflicts", response_model=list[CreateConflictResponse], status_code=status.HTTP_201_CREATED)
 @handle_errors(

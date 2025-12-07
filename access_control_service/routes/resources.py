@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from access_control_service.app.dependencies import get_db_session
+from access_control_service.dependencies import get_db_session
 from access_control_service.models.models import (
     Resource as ResourceOut,
 )
 from access_control_service.services.resource_service import ResourceService
-from access_control_service.app.utils.error_handlers import handle_errors
+from access_control_service.utils.error_handlers import handle_errors
 
 router = APIRouter()
 
@@ -17,7 +17,6 @@ async def get_resource(
     resource_id: int,
     session: AsyncSession = Depends(get_db_session)
 ):
-    """Получение ресурса по ID"""
     resource = await ResourceService.get_resource(session, resource_id)
     return ResourceOut.model_validate(resource)
 
@@ -27,7 +26,6 @@ async def get_resource(
 async def get_all_resources(
     session: AsyncSession = Depends(get_db_session)
 ):
-    """Получение всех ресурсов"""
     resources = await ResourceService.get_all_resources(session)
     return [ResourceOut.model_validate(resource) for resource in resources]
 

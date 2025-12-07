@@ -13,11 +13,9 @@ logger = logging.getLogger(__name__)
 
 
 class ResourceService:
-    """Сервис для работы с ресурсами."""
 
     @staticmethod
     async def create_resource(session: AsyncSession, resource_data: CreateResourceRequest) -> CreateResourceResponse:
-        """Создание ресурса в БД."""
         
         logger.debug(f"Создание ресурса: name={resource_data.name}, type={resource_data.type}")
 
@@ -40,7 +38,6 @@ class ResourceService:
 
     @staticmethod
     async def get_resource(session: AsyncSession, resource_id: int) -> Resource:
-        """Получение ресурса по ID."""
         
         logger.debug(f"Получение ресурса: id={resource_id}")
 
@@ -56,7 +53,6 @@ class ResourceService:
 
     @staticmethod
     async def get_all_resources(session: AsyncSession) -> list[Resource]:
-        """Получение всех ресурсов."""
         
         logger.debug("Получение всех ресурсов")
 
@@ -69,7 +65,6 @@ class ResourceService:
 
     @staticmethod
     async def delete_resource(session: AsyncSession, resource_id: int) -> None:
-        """Удаление ресурса."""
 
         logger.debug(f"Удаление ресурса: id={resource_id}")
 

@@ -7,7 +7,6 @@ from access_control_service.db.base import Base
 
 
 class GroupAccess(Base):
-    """Association таблица между Group и Access"""
     __tablename__ = "group_accesses"
     
     group_id: Mapped[int] = mapped_column(ForeignKey("groups.id"), primary_key=True)

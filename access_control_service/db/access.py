@@ -7,7 +7,6 @@ from access_control_service.db.base import Base
 
 
 class AccessResource(Base):
-    """Association таблица между Access и Resource"""
     __tablename__ = "access_resources"
     
     access_id: Mapped[int] = mapped_column(ForeignKey("accesses.id"), primary_key=True)

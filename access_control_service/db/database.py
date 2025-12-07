@@ -5,7 +5,6 @@ import os
 from typing import AsyncGenerator
 
 from access_control_service.db.base import Base
-# Импорт моделей для регистрации в Base.metadata перед созданием таблиц
 from access_control_service.db.resource import Resource  # noqa: F401
 from access_control_service.db.access import Access, AccessResource  # noqa: F401
 from access_control_service.db.group import Group, GroupAccess  # noqa: F401
@@ -15,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 
 class Database:
-    """Класс для управления подключением к БД"""
     
     def __init__(self):
         self.DB_HOST = os.getenv("DB_HOST", "postgres")
@@ -38,7 +36,6 @@ class Database:
         self.AsyncSessionLocal: async_sessionmaker | None = None
     
     async def _check_database_exists(self) -> bool:
-        """Проверяет, существует ли БД"""
         try:
             temp_engine = create_async_engine(
                 self.SERVER_URL,
@@ -62,7 +59,6 @@ class Database:
             return False
     
     async def _create_database(self):
-        """Создает БД, если её нет"""
         exists = await self._check_database_exists()
         
         if exists:
@@ -88,7 +84,6 @@ class Database:
             raise
     
     async def connect(self):
-        """Создает подключение к БД"""
         if self.engine is not None:
             logger.debug("База данных уже подключена")
             return
@@ -112,7 +107,6 @@ class Database:
         logger.debug(f"Подключено к базе данных '{self.DB_NAME}'")
     
     async def init_db(self):
-        """Инициализация БД - создание таблиц"""
         if self.engine is None:
             await self.connect()
         
@@ -136,7 +130,6 @@ class Database:
             logger.debug("Таблицы базы данных созданы успешно")
     
     async def close(self):
-        """Закрытие всех подключений к БД"""
         if self.engine is not None:
             await self.engine.dispose()
             self.engine = None

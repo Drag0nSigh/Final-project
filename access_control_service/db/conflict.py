@@ -7,7 +7,6 @@ from access_control_service.db.base import Base
 
 
 class Conflict(Base):
-    """Таблица конфликтов между группами прав"""
     __tablename__ = "conflicts"
     
     group_id1: Mapped[int] = mapped_column(ForeignKey("groups.id"), primary_key=True, index=True)

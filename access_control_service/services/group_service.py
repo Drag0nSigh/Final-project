@@ -17,13 +17,11 @@ logger = logging.getLogger(__name__)
 
 
 class GroupService:
-    """Сервис для работы с группами прав"""
 
     @staticmethod
     async def create_group(
         session: AsyncSession, group_data: CreateGroupRequest
     ) -> CreateGroupResponse:
-        """Создание группы прав с привязкой доступов."""
 
         logger.debug(
             f"Создание группы: name={group_data.name}, access_ids={group_data.access_ids}"
@@ -85,7 +83,6 @@ class GroupService:
 
     @staticmethod
     async def get_group(session: AsyncSession, group_id: int) -> Group:
-        """Получение группы по ID с загруженными доступами."""
 
         logger.debug(f"Получение группы: id={group_id}")
 
@@ -109,7 +106,6 @@ class GroupService:
 
     @staticmethod
     async def get_all_groups(session: AsyncSession) -> list[Group]:
-        """Получение всех групп."""
 
         logger.debug("Получение всех групп")
 
@@ -129,7 +125,6 @@ class GroupService:
     async def get_group_accesses(
         session: AsyncSession, group_id: int
     ) -> GetGroupAccessesResponse:
-        """Получение всех доступов группы."""
 
         logger.debug(f"Получение доступов для группы: group_id={group_id}")
 
@@ -174,7 +169,6 @@ class GroupService:
     async def add_access_to_group(
         session: AsyncSession, group_id: int, access_id: int
     ) -> None:
-        """Добавление доступа к группе через association таблицу."""
 
         stmt = (
             select(Group)
@@ -204,7 +198,6 @@ class GroupService:
     async def remove_access_from_group(
         session: AsyncSession, group_id: int, access_id: int
     ) -> None:
-        """Удаление доступа из группы."""
 
         stmt = (
             select(Group)
@@ -232,7 +225,6 @@ class GroupService:
 
     @staticmethod
     async def delete_group(session: AsyncSession, group_id: int) -> None:
-        """Удаление группы."""
 
         stmt = (
             select(Group)

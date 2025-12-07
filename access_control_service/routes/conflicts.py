@@ -3,8 +3,8 @@ import redis.asyncio as redis
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from access_control_service.app.dependencies import get_db_session
-from access_control_service.app.dependencies import get_redis_connection
+from access_control_service.dependencies import get_db_session
+from access_control_service.dependencies import get_redis_connection
 from access_control_service.models.models import GetConflictsResponse, Conflict
 from access_control_service.services.conflict_service import ConflictService
 from access_control_service.services.cache import (
@@ -21,7 +21,6 @@ async def get_all_conflicts(
     session: AsyncSession = Depends(get_db_session),
     redis_conn: redis.Redis = Depends(get_redis_connection)
 ):
-    """Получение всех конфликтов"""
     try:
         cached_conflicts = await get_conflicts_matrix_from_cache(redis_conn)
         if cached_conflicts is not None:

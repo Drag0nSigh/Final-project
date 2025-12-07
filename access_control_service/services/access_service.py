@@ -19,13 +19,11 @@ logger = logging.getLogger(__name__)
 
 
 class AccessService:
-    """Сервис для работы с доступами"""
 
     @staticmethod
     async def create_access(
         session: AsyncSession, access_data: CreateAccessRequest
     ) -> CreateAccessResponse:
-        """Создание доступа с привязкой ресурсов."""
 
         logger.debug(
             f"Создание доступа: name={access_data.name}, resource_ids={access_data.resource_ids}"
@@ -94,7 +92,6 @@ class AccessService:
 
     @staticmethod
     async def get_access(session: AsyncSession, access_id: int) -> Access:
-        """Получение доступа по ID с загруженными ресурсами."""
         
         logger.debug(f"Получение доступа: id={access_id}")
 
@@ -116,7 +113,6 @@ class AccessService:
 
     @staticmethod
     async def get_all_accesses(session: AsyncSession) -> list[Access]:
-        """Получение всех доступов с загруженными ресурсами."""
 
         logger.debug("Получение всех доступов")
 
@@ -131,7 +127,6 @@ class AccessService:
     async def get_groups_containing_access(
         session: AsyncSession, access_id: int
     ) -> GetAccessGroupsResponse:
-        """Получение всех групп, содержащих данный доступ."""
 
         logger.debug(f"Получение групп для доступа: access_id={access_id}")
 

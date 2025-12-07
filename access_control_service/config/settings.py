@@ -6,9 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Набор конфигурационных параметров Access Control Service."""
 
-    # --- Настройки базы данных PostgreSQL ----------------------------------------
     db_host: str = Field(
         default="postgres",
     )
@@ -34,7 +32,6 @@ class Settings(BaseSettings):
         description="Полный URL подключения к серверной БД postgres (для создания БД)",
     )
 
-    # --- Настройки Redis ---------------------------------------------------------
     redis_host: str = Field(
         default="redis",
     )
@@ -51,7 +48,6 @@ class Settings(BaseSettings):
         default=None,
     )
 
-    # --- TTL для кэша Redis (в секундах) ----------------------------------------
     cache_ttl_conflicts_matrix_seconds: int = Field(
         default=600,
         description=(
@@ -74,7 +70,6 @@ class Settings(BaseSettings):
         ),
     )
 
-    # --- Настройки логирования --------------------------------------------------
     log_level: str = Field(
         default="INFO",
         description="Уровень логирования (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
@@ -88,7 +83,6 @@ class Settings(BaseSettings):
     )
 
     def build_database_url(self) -> str:
-        """Сконструировать основную строку подключения к PostgreSQL."""
         if self.database_url:
             return self.database_url
 
@@ -98,7 +92,6 @@ class Settings(BaseSettings):
         )
 
     def build_server_database_url(self) -> str:
-        """Формирует строку подключения к серверной БД PostgreSQL."""
         if self.server_database_url:
             return self.server_database_url
 
@@ -108,7 +101,6 @@ class Settings(BaseSettings):
         )
 
     def build_redis_dsn(self) -> str:
-        """Формирует DSN-строку Redis в формате redis://."""
 
         credentials = ""
         if self.redis_username and self.redis_password:
@@ -124,7 +116,6 @@ ENV_FILE_ENV_VAR: Final[str] = "ACCESS_CONTROL_SERVICE_ENV_FILE"
 
 @lru_cache(maxsize=1)
 def get_settings(env_file: str | None = None) -> Settings:
-    """Возвращает singleton-экземпляр настроек Access Control Service."""
     if env_file is None:
         import os
 

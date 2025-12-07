@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, status
 from datetime import datetime
 from sqlalchemy import text
 
-from access_control_service.app.dependencies import get_database, get_redis_client
+from access_control_service.dependencies import get_database, get_redis_client
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -11,7 +11,6 @@ router = APIRouter()
 
 @router.get("")
 async def health_check():
-    """Проверка работоспособности сервиса"""
     return {
         "status": "healthy",
         "service": "access-control-service",
@@ -21,7 +20,6 @@ async def health_check():
 
 @router.get("/ready")
 async def readiness_check():
-    """Проверка готовности сервиса (БД и Redis)"""
     checks = {
         "db": False,
         "redis": False

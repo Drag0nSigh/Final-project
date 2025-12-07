@@ -17,7 +17,6 @@ CONFLICTS_MATRIX_KEY = "conflicts:matrix"
 async def get_conflicts_matrix_from_cache(
     redis_conn: redis.Redis[Any],
 ) -> list[dict[str, int]] | None:
-    """Пытается получить матрицу конфликтов из кэша."""
 
     cached_value = await redis_conn.get(CONFLICTS_MATRIX_KEY)
     if cached_value is None:
@@ -37,13 +36,6 @@ async def set_conflicts_matrix_cache(
     redis_conn: redis.Redis[Any],
     conflicts: list[dict[str, int]],
 ) -> None:
-    """Сохраняет матрицу конфликтов в Redis с TTL из настроек.
-
-    Args:
-        redis_conn: Подключение к Redis
-        conflicts: Список конфликтов в формате [{"group_id1": int, "group_id2": int}, ...]
-                  (формат модели Conflict)
-    """
 
     ttl = get_settings().cache_ttl_conflicts_matrix_seconds
     await redis_conn.setex(
@@ -59,14 +51,12 @@ async def set_conflicts_matrix_cache(
 async def invalidate_conflicts_matrix_cache(
     redis_conn: redis.Redis[Any],
 ) -> None:
-    """Удаляет кэш матрицы конфликтов."""
 
     await redis_conn.delete(CONFLICTS_MATRIX_KEY)
     logger.debug("Кэш матрицы конфликтов инвалидирован")
 
 
 def _build_group_accesses_key(group_id: int) -> str:
-    """Формирует ключ Redis для хранения доступов группы."""
 
     return f"group:{group_id}:accesses"
 
@@ -75,7 +65,6 @@ async def get_group_accesses_from_cache(
     redis_conn: redis.Redis[Any],
     group_id: int,
 ) -> list[dict[str, Any]] | None:
-    """Пытается получить доступы группы из кэша."""
 
     key = _build_group_accesses_key(group_id)
     cached_value = await redis_conn.get(key)
@@ -97,7 +86,6 @@ async def set_group_accesses_cache(
     group_id: int,
     accesses: list[dict[str, Any]],
 ) -> None:
-    """Сохраняет доступы группы в Redis с TTL из настроек."""
 
     key = _build_group_accesses_key(group_id)
     ttl = get_settings().cache_ttl_group_accesses_seconds
@@ -115,7 +103,6 @@ async def invalidate_group_accesses_cache(
     redis_conn: redis.Redis[Any],
     group_id: int,
 ) -> None:
-    """Удаляет кэш доступов конкретной группы."""
 
     key = _build_group_accesses_key(group_id)
     await redis_conn.delete(key)
@@ -123,7 +110,6 @@ async def invalidate_group_accesses_cache(
 
 
 def _build_access_groups_key(access_id: int) -> str:
-    """Формирует ключ Redis для хранения групп по доступу."""
 
     return f"access:{access_id}:groups"
 
@@ -132,7 +118,6 @@ async def get_access_groups_from_cache(
     redis_conn: redis.Redis[Any],
     access_id: int,
 ) -> list[dict[str, Any]] | None:
-    """Пытается получить группы по доступу из кэша."""
 
     key = _build_access_groups_key(access_id)
     cached_value = await redis_conn.get(key)
@@ -155,7 +140,6 @@ async def set_access_groups_cache(
     access_id: int,
     groups: list[dict[str, Any]],
 ) -> None:
-    """Сохраняет группы по доступу в Redis с TTL из настроек."""
 
     key = _build_access_groups_key(access_id)
     ttl = get_settings().cache_ttl_access_groups_seconds
@@ -173,7 +157,6 @@ async def invalidate_access_groups_cache(
     redis_conn: redis.Redis[Any],
     access_id: int,
 ) -> None:
-    """Удаляет кэш групп конкретного доступа."""
 
     key = _build_access_groups_key(access_id)
     await redis_conn.delete(key)
