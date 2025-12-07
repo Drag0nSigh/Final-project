@@ -1,12 +1,13 @@
 import logging
 import redis.asyncio as redis
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from access_control_service.dependencies import get_db_session
-from access_control_service.dependencies import get_redis_connection
+from access_control_service.dependencies import (
+    get_redis_connection,
+    get_conflict_service,
+)
 from access_control_service.models.models import GetConflictsResponse, Conflict
-from access_control_service.services.conflict_service import ConflictService
+from access_control_service.services.protocols import ConflictServiceProtocol
 from access_control_service.services.cache import (
     get_conflicts_matrix_from_cache,
     set_conflicts_matrix_cache
@@ -18,8 +19,8 @@ router = APIRouter()
 
 @router.get("", response_model=GetConflictsResponse)
 async def get_all_conflicts(
-    session: AsyncSession = Depends(get_db_session),
-    redis_conn: redis.Redis = Depends(get_redis_connection)
+    redis_conn: redis.Redis = Depends(get_redis_connection),
+    conflict_service: ConflictServiceProtocol = Depends(get_conflict_service),
 ):
     try:
         cached_conflicts = await get_conflicts_matrix_from_cache(redis_conn)
@@ -30,7 +31,7 @@ async def get_all_conflicts(
             ]
             return GetConflictsResponse(conflicts=conflicts)
         
-        conflicts_list = await ConflictService.get_all_conflicts(session)
+        conflicts_list = await conflict_service.get_all_conflicts()
         
         conflicts_dict = [conflict.model_dump() for conflict in conflicts_list]
         await set_conflicts_matrix_cache(redis_conn, conflicts_dict)

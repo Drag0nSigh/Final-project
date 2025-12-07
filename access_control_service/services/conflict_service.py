@@ -12,11 +12,13 @@ logger = logging.getLogger(__name__)
 
 class ConflictService:
 
-    @staticmethod
-    async def get_all_conflicts(session: AsyncSession) -> list[ConflictModel]:
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def get_all_conflicts(self) -> list[ConflictModel]:
 
         stmt = select(Conflict)
-        result = await session.execute(stmt)
+        result = await self.session.execute(stmt)
         conflicts = result.scalars().all()
 
         conflicts_out = [

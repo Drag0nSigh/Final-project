@@ -20,9 +20,11 @@ logger = logging.getLogger(__name__)
 
 class AccessService:
 
-    @staticmethod
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
     async def create_access(
-        session: AsyncSession, access_data: CreateAccessRequest
+        self, access_data: CreateAccessRequest
     ) -> CreateAccessResponse:
 
         logger.debug(
@@ -31,7 +33,7 @@ class AccessService:
 
         if access_data.resource_ids:
             stmt = select(Resource.id).where(Resource.id.in_(access_data.resource_ids))
-            result = await session.execute(stmt)
+            result = await self.session.execute(stmt)
             existing_ids = set(result.scalars().all())
 
             missing_ids = set(access_data.resource_ids) - existing_ids
@@ -41,13 +43,13 @@ class AccessService:
                 )
 
         access = Access(name=access_data.name)
-        session.add(access)
-        await session.flush()
-        await session.refresh(access)
+        self.session.add(access)
+        await self.session.flush()
+        await self.session.refresh(access)
 
         if access_data.resource_ids:
             stmt = select(Resource).where(Resource.id.in_(access_data.resource_ids))
-            result = await session.execute(stmt)
+            result = await self.session.execute(stmt)
             resources = result.scalars().all()
             
             stmt = (
@@ -55,10 +57,10 @@ class AccessService:
                 .where(Access.id == access.id)
                 .options(selectinload(Access.resources))
             )
-            result = await session.execute(stmt)
+            result = await self.session.execute(stmt)
             access_with_resources = result.scalar_one()
             access_with_resources.resources.extend(resources)
-            await session.flush()
+            await self.session.flush()
             
             access = access_with_resources
         else:
@@ -67,7 +69,7 @@ class AccessService:
                 .where(Access.id == access.id)
                 .options(selectinload(Access.resources))
             )
-            result = await session.execute(stmt)
+            result = await self.session.execute(stmt)
             access = result.scalar_one()
 
         logger.debug(
@@ -90,8 +92,7 @@ class AccessService:
             resources=resources_out,
         )
 
-    @staticmethod
-    async def get_access(session: AsyncSession, access_id: int) -> Access:
+    async def get_access(self, access_id: int) -> Access:
         
         logger.debug(f"Получение доступа: id={access_id}")
 
@@ -100,7 +101,7 @@ class AccessService:
             .where(Access.id == access_id)
             .options(selectinload(Access.resources))
         )
-        result = await session.execute(stmt)
+        result = await self.session.execute(stmt)
         access = result.scalar_one_or_none()
 
         if access is None:
@@ -111,27 +112,25 @@ class AccessService:
         )
         return access
 
-    @staticmethod
-    async def get_all_accesses(session: AsyncSession) -> list[Access]:
+    async def get_all_accesses(self) -> list[Access]:
 
         logger.debug("Получение всех доступов")
 
         stmt = select(Access).options(selectinload(Access.resources))
-        result = await session.execute(stmt)
+        result = await self.session.execute(stmt)
         accesses = result.scalars().all()
 
         logger.debug(f"Найдено доступов: {len(accesses)}")
         return list(accesses)
 
-    @staticmethod
     async def get_groups_containing_access(
-        session: AsyncSession, access_id: int
+        self, access_id: int
     ) -> GetAccessGroupsResponse:
 
         logger.debug(f"Получение групп для доступа: access_id={access_id}")
 
         stmt = select(Access).where(Access.id == access_id)
-        result = await session.execute(stmt)
+        result = await self.session.execute(stmt)
         access = result.scalar_one_or_none()
         if access is None:
             raise ValueError(f"Доступ с ID {access_id} не найден")
@@ -143,7 +142,7 @@ class AccessService:
                 selectinload(Access.groups).selectinload(Group.accesses)
             )
         )
-        result = await session.execute(stmt)
+        result = await self.session.execute(stmt)
         access_with_groups = result.scalar_one()
 
         groups = [

@@ -11,9 +11,11 @@ logger = logging.getLogger(__name__)
 
 class AccessServiceAdmin:
 
-    @staticmethod
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
     async def add_resource_to_access(
-        session: AsyncSession, access_id: int, resource_id: int
+        self, access_id: int, resource_id: int
     ) -> None:
 
         logger.debug(
@@ -25,13 +27,13 @@ class AccessServiceAdmin:
             .where(Access.id == access_id)
             .options(selectinload(Access.resources))
         )
-        result = await session.execute(stmt)
+        result = await self.session.execute(stmt)
         access = result.scalar_one_or_none()
         if access is None:
             raise ValueError(f"Доступ с ID {access_id} не найден")
 
         stmt = select(Resource).where(Resource.id == resource_id)
-        result = await session.execute(stmt)
+        result = await self.session.execute(stmt)
         resource = result.scalar_one_or_none()
         if resource is None:
             raise ValueError(f"Ресурс с ID {resource_id} не найден")
@@ -42,12 +44,11 @@ class AccessServiceAdmin:
             )
 
         access.resources.append(resource)
-        await session.flush()
+        await self.session.flush()
 
 
-    @staticmethod
     async def remove_resource_from_access(
-        session: AsyncSession, access_id: int, resource_id: int
+        self, access_id: int, resource_id: int
     ) -> None:
         
         logger.debug(
@@ -59,7 +60,7 @@ class AccessServiceAdmin:
             .where(Access.id == access_id)
             .options(selectinload(Access.resources))
         )
-        result = await session.execute(stmt)
+        result = await self.session.execute(stmt)
         access = result.scalar_one_or_none()
         if access is None:
             raise ValueError(f"Доступ с ID {access_id} не найден")
@@ -76,19 +77,18 @@ class AccessServiceAdmin:
             )
 
         access.resources.remove(resource_to_remove)
-        await session.flush()
+        await self.session.flush()
 
         logger.debug(
             f"Ресурс удален из доступа: access_id={access_id}, resource_id={resource_id}"
         )
 
-    @staticmethod
-    async def delete_access(session: AsyncSession, access_id: int) -> None:
+    async def delete_access(self, access_id: int) -> None:
 
         logger.debug(f"Удаление доступа: id={access_id}")
 
         stmt = select(Access).where(Access.id == access_id)
-        result = await session.execute(stmt)
+        result = await self.session.execute(stmt)
         access = result.scalar_one_or_none()
         if access is None:
             raise ValueError(f"Доступ с ID {access_id} не найден")
@@ -98,7 +98,7 @@ class AccessServiceAdmin:
             .where(Access.id == access_id)
             .options(selectinload(Access.groups))
         )
-        result = await session.execute(stmt)
+        result = await self.session.execute(stmt)
         access_with_groups = result.scalar_one()
 
         if access_with_groups.groups:
@@ -109,8 +109,8 @@ class AccessServiceAdmin:
             )
 
         access_name = access_with_groups.name
-        session.delete(access_with_groups)
-        await session.flush()
+        self.session.delete(access_with_groups)
+        await self.session.flush()
 
         logger.debug(f"Доступ удален: id={access_id}, name={access_name}")
 

@@ -18,9 +18,11 @@ logger = logging.getLogger(__name__)
 
 class GroupService:
 
-    @staticmethod
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
     async def create_group(
-        session: AsyncSession, group_data: CreateGroupRequest
+        self, group_data: CreateGroupRequest
     ) -> CreateGroupResponse:
 
         logger.debug(
@@ -29,7 +31,7 @@ class GroupService:
 
         if group_data.access_ids:
             stmt = select(Access.id).where(Access.id.in_(group_data.access_ids))
-            result = await session.execute(stmt)
+            result = await self.session.execute(stmt)
             existing_ids = set(result.scalars().all())
 
             missing_ids = set(group_data.access_ids) - existing_ids
@@ -39,13 +41,13 @@ class GroupService:
                 )
 
         group = Group(name=group_data.name)
-        session.add(group)
-        await session.flush()
-        await session.refresh(group)
+        self.session.add(group)
+        await self.session.flush()
+        await self.session.refresh(group)
 
         if group_data.access_ids:
             stmt = select(Access).where(Access.id.in_(group_data.access_ids))
-            result = await session.execute(stmt)
+            result = await self.session.execute(stmt)
             accesses = result.scalars().all()
             
             stmt = (
@@ -53,14 +55,14 @@ class GroupService:
                 .where(Group.id == group.id)
                 .options(selectinload(Group.accesses))
             )
-            result = await session.execute(stmt)
+            result = await self.session.execute(stmt)
             group_with_accesses = result.scalar_one()
             group_with_accesses.accesses.extend(accesses)
-            await session.flush()
+            await self.session.flush()
             
             group = group_with_accesses
 
-        await session.refresh(group, ["accesses"])
+        await self.session.refresh(group, ["accesses"])
 
         logger.debug(
             f"Группа создана: id={group.id}, name={group.name}, accesses_count={len(group.accesses)}"
@@ -81,8 +83,7 @@ class GroupService:
             accesses=accesses_out,
         )
 
-    @staticmethod
-    async def get_group(session: AsyncSession, group_id: int) -> Group:
+    async def get_group(self, group_id: int) -> Group:
 
         logger.debug(f"Получение группы: id={group_id}")
 
@@ -93,7 +94,7 @@ class GroupService:
                 selectinload(Group.accesses).selectinload(Access.resources)
             )
         )
-        result = await session.execute(stmt)
+        result = await self.session.execute(stmt)
         group = result.scalar_one_or_none()
 
         if group is None:
@@ -104,8 +105,7 @@ class GroupService:
         )
         return group
 
-    @staticmethod
-    async def get_all_groups(session: AsyncSession) -> list[Group]:
+    async def get_all_groups(self) -> list[Group]:
 
         logger.debug("Получение всех групп")
 
@@ -115,15 +115,14 @@ class GroupService:
                 selectinload(Group.accesses).selectinload(Access.resources)
             )
         )
-        result = await session.execute(stmt)
+        result = await self.session.execute(stmt)
         groups = result.scalars().all()
 
         logger.debug(f"Найдено групп: {len(groups)}")
         return list(groups)
 
-    @staticmethod
     async def get_group_accesses(
-        session: AsyncSession, group_id: int
+        self, group_id: int
     ) -> GetGroupAccessesResponse:
 
         logger.debug(f"Получение доступов для группы: group_id={group_id}")
@@ -135,7 +134,7 @@ class GroupService:
                 selectinload(Group.accesses).selectinload(Access.resources)
             )
         )
-        result = await session.execute(stmt)
+        result = await self.session.execute(stmt)
         group_with_accesses = result.scalar_one_or_none()
         
         if group_with_accesses is None:
@@ -165,9 +164,8 @@ class GroupService:
 
         return GetGroupAccessesResponse(group_id=group_id, accesses=accesses)
 
-    @staticmethod
     async def add_access_to_group(
-        session: AsyncSession, group_id: int, access_id: int
+        self, group_id: int, access_id: int
     ) -> None:
 
         stmt = (
@@ -175,13 +173,13 @@ class GroupService:
             .where(Group.id == group_id)
             .options(selectinload(Group.accesses))
         )
-        result = await session.execute(stmt)
+        result = await self.session.execute(stmt)
         group = result.scalar_one_or_none()
         if group is None:
             raise ValueError(f"Группа с ID {group_id} не найдена")
 
         stmt = select(Access).where(Access.id == access_id)
-        result = await session.execute(stmt)
+        result = await self.session.execute(stmt)
         access = result.scalar_one_or_none()
         if access is None:
             raise ValueError(f"Доступ с ID {access_id} не найден")
@@ -192,11 +190,10 @@ class GroupService:
             )
 
         group.accesses.append(access)
-        await session.flush()
+        await self.session.flush()
 
-    @staticmethod
     async def remove_access_from_group(
-        session: AsyncSession, group_id: int, access_id: int
+        self, group_id: int, access_id: int
     ) -> None:
 
         stmt = (
@@ -204,7 +201,7 @@ class GroupService:
             .where(Group.id == group_id)
             .options(selectinload(Group.accesses))
         )
-        result = await session.execute(stmt)
+        result = await self.session.execute(stmt)
         group = result.scalar_one_or_none()
         if group is None:
             raise ValueError(f"Группа с ID {group_id} не найдена")
@@ -221,10 +218,9 @@ class GroupService:
             )
 
         group.accesses.remove(access_to_remove)
-        await session.flush()
+        await self.session.flush()
 
-    @staticmethod
-    async def delete_group(session: AsyncSession, group_id: int) -> None:
+    async def delete_group(self, group_id: int) -> None:
 
         stmt = (
             select(Group)
@@ -234,7 +230,7 @@ class GroupService:
                 selectinload(Group.conflicts_as_group2)
             )
         )
-        result = await session.execute(stmt)
+        result = await self.session.execute(stmt)
         group = result.scalar_one_or_none()
         if group is None:
             raise ValueError(f"Группа с ID {group_id} не найдена")
@@ -245,7 +241,7 @@ class GroupService:
                 f"Группа с ID {group_id} не может быть удалена, так как имеет конфликты"
             )
 
-        session.delete(group)
-        await session.flush()
+        self.session.delete(group)
+        await self.session.flush()
 
 

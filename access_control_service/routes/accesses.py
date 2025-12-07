@@ -1,13 +1,12 @@
 from fastapi import APIRouter, Depends, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from access_control_service.dependencies import get_db_session
+from access_control_service.dependencies import get_access_service
 from access_control_service.models.models import (
     Access as AccessOut,
     GetAccessGroupsResponse,
     Resource as ResourceModel,
 )
-from access_control_service.services.access_service import AccessService
+from access_control_service.services.protocols import AccessServiceProtocol
 from access_control_service.utils.error_handlers import handle_errors
 
 router = APIRouter()
@@ -17,9 +16,9 @@ router = APIRouter()
 @handle_errors(error_message_prefix="при получении доступа")
 async def get_access(
     access_id: int,
-    session: AsyncSession = Depends(get_db_session)
+    access_service: AccessServiceProtocol = Depends(get_access_service),
 ):
-    access = await AccessService.get_access(session, access_id)
+    access = await access_service.get_access(access_id)
     
     resources_out = [
         ResourceModel(
@@ -41,9 +40,9 @@ async def get_access(
 @router.get("", response_model=list[AccessOut])
 @handle_errors(error_message_prefix="при получении всех доступов")
 async def get_all_accesses(
-    session: AsyncSession = Depends(get_db_session)
+    access_service: AccessServiceProtocol = Depends(get_access_service),
 ):
-    accesses = await AccessService.get_all_accesses(session)
+    accesses = await access_service.get_all_accesses()
     
     result = []
     for access in accesses:
@@ -71,7 +70,7 @@ async def get_all_accesses(
 @handle_errors(error_message_prefix="при получении групп для доступа")
 async def get_groups_by_access(
     access_id: int,
-    session: AsyncSession = Depends(get_db_session)
+    access_service: AccessServiceProtocol = Depends(get_access_service),
 ):
-    return await AccessService.get_groups_containing_access(session, access_id)
+    return await access_service.get_groups_containing_access(access_id)
 

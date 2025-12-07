@@ -14,9 +14,11 @@ logger = logging.getLogger(__name__)
 
 class ConflictServiceAdmin:
 
-    @staticmethod
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
     async def create_conflict(
-        session: AsyncSession, conflict_data: CreateConflictRequest
+        self, conflict_data: CreateConflictRequest
     ) -> list[CreateConflictResponse]:
 
         group_id1 = conflict_data.group_id1
@@ -30,7 +32,7 @@ class ConflictServiceAdmin:
         )
 
         stmt = select(Group.id).where(Group.id.in_([group_id1, group_id2]))
-        result = await session.execute(stmt)
+        result = await self.session.execute(stmt)
         existing_ids = set(result.scalars().all())
 
         missing_ids = {group_id1, group_id2} - existing_ids
@@ -43,13 +45,13 @@ class ConflictServiceAdmin:
             stmt = select(Conflict).where(
                 Conflict.group_id1 == g1, Conflict.group_id2 == g2
             )
-            result = await session.execute(stmt)
+            result = await self.session.execute(stmt)
             existing_conflict = result.scalar_one_or_none()
 
             if existing_conflict is None:
                 conflict = Conflict(group_id1=g1, group_id2=g2)
-                session.add(conflict)
-                await session.flush()
+                self.session.add(conflict)
+                await self.session.flush()
                 created_conflicts.append(
                     CreateConflictResponse(group_id1=g1, group_id2=g2)
                 )
@@ -69,9 +71,8 @@ class ConflictServiceAdmin:
 
         return created_conflicts
 
-    @staticmethod
     async def delete_conflict(
-        session: AsyncSession, group_id1: int, group_id2: int
+        self, group_id1: int, group_id2: int
     ) -> None:
         """Удаление конфликта между группами.
 
@@ -88,12 +89,12 @@ class ConflictServiceAdmin:
             stmt = select(Conflict).where(
                 Conflict.group_id1 == g1, Conflict.group_id2 == g2
             )
-            result = await session.execute(stmt)
+            result = await self.session.execute(stmt)
             conflict = result.scalar_one_or_none()
 
             if conflict is not None:
-                session.delete(conflict)
-                await session.flush()
+                self.session.delete(conflict)
+                await self.session.flush()
                 deleted_count += 1
                 logger.debug(f"Удален конфликт: group_id1={g1}, group_id2={g2}")
             else:
