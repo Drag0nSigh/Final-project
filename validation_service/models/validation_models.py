@@ -4,7 +4,6 @@ from validation_service.models.enums import PermissionType
 
 
 class ValidationRequest(BaseModel):
-    """Модель запроса на валидацию из RabbitMQ"""
     
     user_id: int = Field(gt=0, description="ID пользователя")
     permission_type: PermissionType = Field(
@@ -26,7 +25,6 @@ class ValidationRequest(BaseModel):
     )
 
 class ValidationResult(BaseModel):
-    """Модель результата валидации для отправки в RabbitMQ"""
     
     request_id: str = Field(description="UUID заявки")
     approved: bool = Field(description="Одобрено или отклонено")

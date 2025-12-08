@@ -1,9 +1,3 @@
-"""
-Главное приложение Validation Service
-
-Точка входа и управление жизненным циклом приложения.
-"""
-
 import asyncio
 import logging
 import sys
@@ -16,9 +10,15 @@ from validation_service.config.settings import Settings
 from validation_service.services.redis_cache import RedisCache
 from validation_service.services.user_service_client import UserServiceClient
 from validation_service.services.access_control_client import AccessControlClient
-from validation_service.app.services.validation_service import ValidationService
-from validation_service.app.publishers.result_publisher import ResultPublisher
-from validation_service.app.consumers.validation_consumer import ValidationConsumer
+from validation_service.services.validation_service import ValidationService
+from validation_service.services.protocols import (
+    UserServiceClientProtocol,
+    AccessControlClientProtocol,
+    ValidationServiceProtocol,
+)
+from validation_service.rabbitmq.publishers.result_publisher import ResultPublisher
+from validation_service.rabbitmq.protocols import ResultPublisherProtocol
+from validation_service.rabbitmq.consumers.validation_consumer import ValidationConsumer
 
 settings = Settings()
 log_level = getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO)
@@ -40,7 +40,6 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Управление жизненным циклом приложения"""
     
     logger.debug("Запуск Validation Service...")
     
@@ -62,12 +61,12 @@ async def lifespan(app: FastAPI):
         
         try:
             logger.debug("Инициализация HTTP клиентов...")
-            user_client = UserServiceClient(
+            user_client: UserServiceClientProtocol = UserServiceClient(
                 base_url=settings.USER_SERVICE_URL,
                 cache=cache,
                 timeout=settings.HTTP_TIMEOUT
             )
-            access_control_client = AccessControlClient(
+            access_control_client: AccessControlClientProtocol = AccessControlClient(
                 base_url=settings.ACCESS_CONTROL_SERVICE_URL,
                 cache=cache,
                 timeout=settings.HTTP_TIMEOUT
@@ -81,7 +80,7 @@ async def lifespan(app: FastAPI):
         
         try:
             logger.debug("Инициализация ValidationService...")
-            validation_service = ValidationService(
+            validation_service: ValidationServiceProtocol = ValidationService(
                 user_client=user_client,
                 access_control_client=access_control_client
             )
@@ -93,7 +92,7 @@ async def lifespan(app: FastAPI):
         
         try:
             logger.debug("Инициализация ResultPublisher...")
-            publisher = ResultPublisher(
+            publisher: ResultPublisherProtocol = ResultPublisher(
                 rabbitmq_url=settings.rabbitmq_url,
                 result_queue_name=settings.RESULT_QUEUE
             )
@@ -204,7 +203,6 @@ app = FastAPI(
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
     return {
         "status": "healthy",
         "service": "validation-service"
@@ -213,7 +211,6 @@ async def health_check():
 
 @app.get("/ready")
 async def readiness_check(request: Request):
-    """Readiness check"""
 
     checks = {
         "redis": False,

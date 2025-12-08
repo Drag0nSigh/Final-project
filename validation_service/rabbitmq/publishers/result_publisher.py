@@ -1,9 +1,3 @@
-"""
-Publisher для отправки результатов валидации в RabbitMQ
-
-Отправляет результаты валидации в очередь result_queue.
-"""
-
 import logging
 import aio_pika
 from aio_pika.abc import AbstractConnection, AbstractChannel
@@ -14,14 +8,12 @@ logger = logging.getLogger(__name__)
 
 
 class ResultPublisher:
-    """Publisher для отправки результатов валидации"""
     
     def __init__(
         self,
         rabbitmq_url: str,
         result_queue_name: str
     ):
-        """Инициализация publisher"""
 
         self.rabbitmq_url = rabbitmq_url
         self.result_queue_name = result_queue_name
@@ -30,7 +22,6 @@ class ResultPublisher:
         self.queue: aio_pika.abc.AbstractQueue | None = None
     
     async def connect(self):
-        """Подключение к RabbitMQ"""
         try:
             self.connection = await aio_pika.connect_robust(self.rabbitmq_url)
             self.channel = await self.connection.channel()
@@ -48,7 +39,6 @@ class ResultPublisher:
             raise
     
     async def close(self):
-        """Закрытие подключения"""
         try:
             if self.channel and not self.channel.is_closed:
                 await self.channel.close()
@@ -59,15 +49,6 @@ class ResultPublisher:
             logger.error(f"Ошибка при закрытии Publisher: {e}")
     
     async def publish_result(self, result: ValidationResult):
-        """
-        Отправить результат валидации в result_queue
-        
-        Логика:
-        1. Сериализовать ValidationResult в JSON
-        2. Опубликовать сообщение в очередь
-        3. Логировать результат
-        
-        """
         if not self.channel or self.channel.is_closed:
             logger.error("Канал RabbitMQ не открыт, невозможно отправить результат")
             raise RuntimeError("Publisher не подключен к RabbitMQ")
@@ -78,7 +59,7 @@ class ResultPublisher:
             await self.channel.default_exchange.publish(
                 aio_pika.Message(
                     message_body,
-                    delivery_mode=aio_pika.DeliveryMode.PERSISTENT  # Сохранять при перезапуске
+                    delivery_mode=aio_pika.DeliveryMode.PERSISTENT
                 ),
                 routing_key=self.result_queue_name
             )

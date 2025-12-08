@@ -1,9 +1,3 @@
-"""
-Базовый класс для HTTP клиентов с поддержкой кэширования
-
-Содержит общую логику кэширования для всех клиентов.
-"""
-
 import logging
 from typing import Any, Callable, Awaitable
 import httpx
@@ -14,7 +8,6 @@ logger = logging.getLogger(__name__)
 
 
 class BaseServiceClient:
-    """Базовый класс для HTTP клиентов с кэшированием"""
     
     def __init__(
         self,
@@ -22,7 +15,6 @@ class BaseServiceClient:
         cache: RedisCache | None = None,
         timeout: float = 30.0
     ):
-        """Инициализация базового клиента"""
         
         self.base_url = base_url.rstrip('/')
         self.cache = cache
@@ -30,7 +22,6 @@ class BaseServiceClient:
         self.client = httpx.AsyncClient(timeout=timeout)
     
     async def close(self):
-        """Закрыть HTTP клиент"""
 
         await self.client.aclose()
     
@@ -41,7 +32,6 @@ class BaseServiceClient:
         use_cache: bool = True,
         cache_log_message: str | None = None
     ) -> Any | None:
-        """Получить данные из кэша"""
         
         if use_cache and self.cache:
             cached = await self.cache.get_json(cache_key)
@@ -64,7 +54,6 @@ class BaseServiceClient:
         use_cache: bool = True,
         cache_log_message: str | None = None
     ) -> None:
-        """Сохранить данные в кэш"""
         
         if use_cache and self.cache:
             if response_key:
@@ -86,7 +75,6 @@ class BaseServiceClient:
         cache_key: str,
         log_message: str | None = None
     ) -> None:
-        """Инвалидировать кэш по ключу"""
         
         if self.cache:
             await self.cache.delete(cache_key)
@@ -99,7 +87,6 @@ class BaseServiceClient:
         response_key: str | None = None,
         default: Any = []
     ) -> Any:
-        """Выполнить GET запрос и извлечь данные из JSON ответа"""
         
         url = f"{self.base_url}/{path.lstrip('/')}"
         response = await self.client.get(url)
@@ -119,7 +106,6 @@ class BaseServiceClient:
         use_cache: bool = True,
         cache_log_message: str | None = None
     ) -> Any:
-        """Универсальный метод для запроса с кэшированием"""
 
         if use_cache and self.cache:
             cached = await self.cache.get_json(cache_key)

@@ -1,4 +1,0 @@
-"""
-Утилиты для Validation Service
-"""
-

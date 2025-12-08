@@ -7,23 +7,21 @@ from validation_service.models.validation_models import (
     ValidationRequest,
     ValidationResult
 )
-from validation_service.app.services.validation_service import ValidationService
-from validation_service.app.publishers.result_publisher import ResultPublisher
+from validation_service.services.protocols import ValidationServiceProtocol
+from validation_service.rabbitmq.protocols import ResultPublisherProtocol
 
 logger = logging.getLogger(__name__)
 
 
 class ValidationConsumer:
-    """Consumer для обработки запросов на валидацию"""
     
     def __init__(
         self,
-        validation_service: ValidationService,
-        publisher: ResultPublisher,
+        validation_service: ValidationServiceProtocol,
+        publisher: ResultPublisherProtocol,
         rabbitmq_url: str,
         validation_queue_name: str
     ):
-        """Инициализация consumer"""
 
         self.validation_service = validation_service
         self.publisher = publisher
@@ -35,7 +33,6 @@ class ValidationConsumer:
         self._consuming = False
     
     async def connect(self):
-        """Подключение к RabbitMQ"""
         
         if self.connection and not self.connection.is_closed:
             logger.warning("Consumer уже подключен к RabbitMQ")
@@ -60,7 +57,6 @@ class ValidationConsumer:
             raise
     
     async def close(self):
-        """Закрытие подключения"""
         self._consuming = False
         try:
             if self.channel and not self.channel.is_closed:
@@ -72,14 +68,6 @@ class ValidationConsumer:
             logger.error(f"Ошибка при закрытии ValidationConsumer: {e}")
     
     async def start_consuming(self):
-        """
-        Начать потребление сообщений из validation_queue
-        
-        Логика:
-        1. Объявить очередь validation_queue (уже сделано в connect)
-        2. Начать потребление сообщений
-        3. Для каждого сообщения вызывается _handle_message
-        """
         if not self.queue:
             raise RuntimeError("Consumer не подключен к RabbitMQ. Вызовите connect() сначала.")
         
@@ -93,15 +81,6 @@ class ValidationConsumer:
                 await self._handle_message(message)
     
     async def _handle_message(self, message: aio_pika.IncomingMessage):
-        """
-        Обработка одного сообщения
-        
-        Логика:
-        1. Парсить ValidationRequest из JSON
-        2. Вызвать validation_service.validate()
-        3. Отправить результат в result_queue через publisher
-        4. Подтвердить обработку (ack) или отклонить (nack)
-        """
 
         async with message.process():
             try:

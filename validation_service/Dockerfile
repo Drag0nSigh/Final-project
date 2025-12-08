@@ -17,4 +17,4 @@ ENV PYTHONUNBUFFERED=1
 
 EXPOSE 8000
 
-CMD ["uvicorn", "validation_service.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "validation_service.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

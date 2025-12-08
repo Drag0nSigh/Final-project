@@ -4,12 +4,12 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from validation_service.services.base_client import BaseServiceClient
 from validation_service.services.cache_constants import USER_GROUPS_TTL
+from validation_service.models.service_models import GetUserGroupsResponse, Group
 
 logger = logging.getLogger(__name__)
 
 
 class UserServiceClient(BaseServiceClient):
-    """HTTP клиент для User Service"""
     
     def __init__(
         self,
@@ -17,7 +17,6 @@ class UserServiceClient(BaseServiceClient):
         cache: Any | None = None,
         timeout: float = 30.0
     ):
-        """Инициализация клиента"""
         super().__init__(base_url, cache, timeout)
     
     @retry(
@@ -28,8 +27,7 @@ class UserServiceClient(BaseServiceClient):
         self,
         user_id: int,
         use_cache: bool = True
-    ) -> list[dict[str, Any]]:
-        """Получить активные группы пользователя"""
+    ) -> GetUserGroupsResponse:
 
         cache_key = f"user:{user_id}:groups"
         
@@ -40,23 +38,27 @@ class UserServiceClient(BaseServiceClient):
             cache_log_message=f"Кэш для пользователя {user_id} групп"
         )
         if cached is not None:
-            return cached
+            groups = [Group.model_validate(group_dict) for group_dict in cached]
+            return GetUserGroupsResponse(groups=groups)
         
         data = await self._get_json_data(f"users/{user_id}/current_active_groups", response_key="groups")
         
+        groups = [Group.model_validate(group_dict) for group_dict in data]
+        response = GetUserGroupsResponse(groups=groups)
+        
+        groups_dict = [group.model_dump() for group in groups]
         await self._set_to_cache(
             cache_key=cache_key,
-            data=data,
+            data=groups_dict,
             response_key="groups",
             ttl=USER_GROUPS_TTL,
             use_cache=use_cache,
             cache_log_message=f"Кэш сохранен для пользователя {user_id} групп"
         )
         
-        return data
+        return response
     
     async def invalidate_user_cache(self, user_id: int):
-        """Инвалидировать кэш пользователя"""
         await self._invalidate_cache(
             f"user:{user_id}:groups",
             f"Кэш инвалидирован для пользователя {user_id}"
