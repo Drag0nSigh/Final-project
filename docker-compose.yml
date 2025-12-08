@@ -1,5 +1,4 @@
 services:
-  # ===== ИНФРАСТРУКТУРА (разделяемые сервисы) =====
   
   redis:
     image: redis:7-alpine
@@ -39,7 +38,6 @@ services:
       - services_network
     restart: unless-stopped
 
-  # ===== БАЗЫ ДАННЫХ =====
   
   postgres_user:
     image: postgres:13-alpine
@@ -79,7 +77,6 @@ services:
     networks:
       - services_network
 
-  # ===== БИЗНЕС СЕРВИСЫ =====
   
   user_service:
     build:
@@ -102,7 +99,7 @@ services:
       RABBITMQ_PASSWORD: guest
       
       SERVICE_NAME: user_service
-      LOG_LEVEL: INFO
+      LOG_LEVEL: DEBUG
     ports:
       - "8001:8000"
     depends_on:
@@ -134,7 +131,7 @@ services:
       REDIS_PORT: 6379
       
       SERVICE_NAME: access_control_service
-      LOG_LEVEL: INFO
+      ACCESS_CONTROL_SERVICE_LOG_LEVEL: DEBUG
     ports:
       - "8002:8000"
     depends_on:
@@ -169,7 +166,7 @@ services:
       REDIS_PORT: 6379
       
       HTTP_TIMEOUT: 30.0
-      LOG_LEVEL: INFO
+      LOG_LEVEL: DEBUG
     ports:
       - "8003:8000"
     depends_on:
@@ -196,7 +193,7 @@ services:
       BFF_SERVICE_USER_SERVICE_URL: http://user_service:8000
       BFF_SERVICE_ACCESS_CONTROL_SERVICE_URL: http://access_control_service:8000
       BFF_SERVICE_HTTP_TIMEOUT: 30.0
-      BFF_SERVICE_LOG_LEVEL: INFO
+      BFF_SERVICE_LOG_LEVEL: DEBUG
     ports:
       - "8000:8000"
     depends_on:

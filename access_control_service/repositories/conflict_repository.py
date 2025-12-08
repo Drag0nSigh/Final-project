@@ -25,7 +25,7 @@ class ConflictRepository:
         return conflict
 
     async def delete(self, conflict: Conflict) -> None:
-        self.session.delete(conflict)
+        await self.session.delete(conflict)
         await self.session.flush()
 
     async def flush(self) -> None:

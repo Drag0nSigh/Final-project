@@ -37,6 +37,10 @@ class GroupService:
             f"Создание группы: name={group_data.name}, access_ids={group_data.access_ids}"
         )
 
+        existing_group = await self.group_repository.find_by_name(group_data.name)
+        if existing_group is not None:
+            raise ValueError(f"Группа с именем '{group_data.name}' уже существует")
+
         if group_data.access_ids:
             existing_ids = await self.access_repository.find_ids_by_ids(
                 group_data.access_ids

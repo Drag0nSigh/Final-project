@@ -47,7 +47,7 @@ class AccessRepository:
         await self.session.flush()
 
     async def delete(self, access: Access) -> None:
-        self.session.delete(access)
+        await self.session.delete(access)
         await self.session.flush()
 
     async def find_ids_by_ids(self, access_ids: list[int]) -> set[int]:

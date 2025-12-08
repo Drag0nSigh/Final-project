@@ -17,7 +17,7 @@ def _build_user_groups_key(user_id: int) -> str:
 
 
 async def get_user_groups_from_cache(
-    redis_conn: redis.Redis[Any],
+    redis_conn: redis.Redis,
     user_id: int,
 ) -> list[dict[str, Any]] | None:
 
@@ -34,7 +34,7 @@ async def get_user_groups_from_cache(
 
 
 async def set_user_groups_cache(
-    redis_conn: redis.Redis[Any],
+    redis_conn: redis.Redis,
     user_id: int,
     groups: list[dict[str, Any]],
 ) -> None:
@@ -45,7 +45,7 @@ async def set_user_groups_cache(
 
 
 async def invalidate_user_groups_cache(
-    redis_conn: redis.Redis[Any],
+    redis_conn: redis.Redis,
     user_id: int,
 ) -> None:
 

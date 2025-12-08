@@ -88,6 +88,6 @@ class UserPermissionRepository:
         await self.session.flush()
 
     async def delete(self, permission: UserPermission) -> None:
-        self.session.delete(permission)
+        await self.session.delete(permission)
         await self.session.flush()
 

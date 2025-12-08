@@ -4,6 +4,7 @@ from sqlalchemy import String, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from access_control_service.db.base import Base
+from access_control_service.db.conflict import Conflict
 
 
 class GroupAccess(Base):
@@ -23,12 +24,12 @@ class Group(Base):
     
     conflicts_as_group1: Mapped[list["Conflict"]] = relationship(
         "Conflict",
-        foreign_keys=["Conflict.group_id1"],
+        foreign_keys=[Conflict.group_id1],
         back_populates="group1"
     )
     conflicts_as_group2: Mapped[list["Conflict"]] = relationship(
         "Conflict",
-        foreign_keys=["Conflict.group_id2"],
+        foreign_keys=[Conflict.group_id2],
         back_populates="group2"
     )
 

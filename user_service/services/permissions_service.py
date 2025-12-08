@@ -5,6 +5,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any
 from datetime import datetime
+from uuid import uuid4
 
 import redis.asyncio as redis
 
@@ -35,14 +36,12 @@ from user_service.models.models import (
 class PermissionService:
 
     permission_repository: UserPermissionRepositoryProtocol
-    redis_conn: redis.Redis[Any] | None = None
+    redis_conn: redis.Redis | None = None
 
     async def create_request(
         self,
         request_data: RequestAccessRequest,
     ) -> RequestAccessResponse:
-        
-        from uuid import uuid4
         
         logger.debug(
             f"Создание заявки: user={request_data.user_id} "

@@ -1,5 +1,6 @@
 from functools import lru_cache
 from typing import Final
+import os
 
 from pydantic import AnyUrl, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -138,8 +139,6 @@ ENV_FILE_ENV_VAR: Final[str] = "USER_SERVICE_ENV_FILE"
 def get_settings(env_file: str | None = None) -> Settings:
 
     if env_file is None:
-        import os
-
         env_file = os.getenv(ENV_FILE_ENV_VAR)
 
     return Settings(_env_file=env_file)

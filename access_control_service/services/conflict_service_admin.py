@@ -4,6 +4,7 @@ from access_control_service.db.conflict import Conflict
 from access_control_service.models.models import (
     CreateConflictRequest,
     CreateConflictResponse,
+    GetConflictsResponse,
 )
 from access_control_service.repositories.protocols import (
     GroupRepositoryProtocol,
@@ -88,6 +89,7 @@ class ConflictServiceAdmin:
 
         for g1, g2 in [(group_id1, group_id2), (group_id2, group_id1)]:
             conflict = await self.conflict_repository.find_by_group_ids(g1, g2)
+            logger.debug(f"conflict: {conflict.group_id1}, {conflict.group_id2}" if conflict else "conflict: None")
 
             if conflict is not None:
                 await self.conflict_repository.delete(conflict)
@@ -97,13 +99,13 @@ class ConflictServiceAdmin:
                 logger.debug(
                     f"Конфликт не найден: group_id1={g1}, group_id2={g2}"
                 )
-
+        found_conflict = await self.conflict_repository.find_by_group_ids(group_id1, group_id2) # DEBUG
+        logger.debug(f"{found_conflict}" if found_conflict else "found_conflict: None") # DEBUG
         if deleted_count == 0:
 
             raise ValueError(
                 f"Конфликт между группами {group_id1} и {group_id2} не найден"
             )
-
         logger.debug(
             f"Конфликт удален: group_id1={group_id1}, group_id2={group_id2}, "
             f"удалено пар: {deleted_count}"

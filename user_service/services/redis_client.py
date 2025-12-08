@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
-
 import redis.asyncio as redis
 
 from user_service.config.settings import get_settings
@@ -11,10 +9,10 @@ class RedisClient:
 
     def __init__(self) -> None:
         self._settings = get_settings()
-        self._connection: redis.Redis[Any] | None = None
+        self._connection: redis.Redis | None = None
 
     @property
-    def connection(self) -> redis.Redis[Any]:
+    def connection(self) -> redis.Redis:
 
         if self._connection is None:
             raise RuntimeError(

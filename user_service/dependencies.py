@@ -94,14 +94,14 @@ def get_user_permission_repository(
 
 def get_permission_service(
     permission_repository: UserPermissionRepositoryProtocol = Depends(get_user_permission_repository),
-    redis_conn: redis.Redis[Any] = Depends(get_redis_connection),
+    redis_conn: redis.Redis = Depends(get_redis_connection),
 ) -> PermissionServiceProtocol:
     return PermissionService(permission_repository=permission_repository, redis_conn=redis_conn)
 
 
 def create_permission_service(
     session: AsyncSession,
-    redis_conn: redis.Redis[Any] | None = None,
+    redis_conn: redis.Redis | None = None,
 ) -> PermissionServiceProtocol:
     permission_repository = UserPermissionRepository(session=session)
     return PermissionService(permission_repository=permission_repository, redis_conn=redis_conn)

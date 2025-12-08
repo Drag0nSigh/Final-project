@@ -1,4 +1,4 @@
-from typing import Protocol, Any
+from typing import Protocol
 
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 import redis.asyncio as redis
@@ -22,7 +22,7 @@ class DatabaseProtocol(Protocol):
 class RedisClientProtocol(Protocol):
 
     @property
-    def connection(self) -> redis.Redis[Any]:
+    def connection(self) -> redis.Redis:
         ...
 
     async def connect(self) -> None:

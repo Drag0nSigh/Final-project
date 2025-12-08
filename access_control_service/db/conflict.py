@@ -14,12 +14,12 @@ class Conflict(Base):
     
     group1: Mapped["Group"] = relationship(
         "Group",
-        foreign_keys=["Conflict.group_id1"],
+        foreign_keys=[group_id1],
         back_populates="conflicts_as_group1"
     )
     group2: Mapped["Group"] = relationship(
         "Group",
-        foreign_keys=["Conflict.group_id2"],
+        foreign_keys=[group_id2],
         back_populates="conflicts_as_group2"
     )
     

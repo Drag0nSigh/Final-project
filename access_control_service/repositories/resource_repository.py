@@ -47,7 +47,7 @@ class ResourceRepository:
         return resource
 
     async def delete(self, resource: Resource) -> None:
-        self.session.delete(resource)
+        await self.session.delete(resource)
         await self.session.flush()
 
     async def flush(self) -> None:

@@ -59,6 +59,11 @@ class GroupRepository:
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def find_by_name(self, name: str) -> Group | None:
+        stmt = select(Group).where(Group.name == name)
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def save(self, group: Group) -> Group:
         self.session.add(group)
         await self.session.flush()
@@ -69,6 +74,6 @@ class GroupRepository:
         await self.session.flush()
 
     async def delete(self, group: Group) -> None:
-        self.session.delete(group)
+        await self.session.delete(group)
         await self.session.flush()
 
