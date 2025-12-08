@@ -1,11 +1,6 @@
 import logging
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 
 from access_control_service.db.access import Access
-from access_control_service.db.resource import Resource
-from access_control_service.db.group import Group
 from access_control_service.models.models import (
     CreateAccessRequest,
     CreateAccessResponse,
@@ -14,14 +9,23 @@ from access_control_service.models.models import (
     Group as GroupModel,
     Access as AccessModel,
 )
+from access_control_service.repositories.protocols import (
+    AccessRepositoryProtocol,
+    ResourceRepositoryProtocol,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class AccessService:
 
-    def __init__(self, session: AsyncSession):
-        self.session = session
+    def __init__(
+        self,
+        access_repository: AccessRepositoryProtocol,
+        resource_repository: ResourceRepositoryProtocol,
+    ):
+        self.access_repository = access_repository
+        self.resource_repository = resource_repository
 
     async def create_access(
         self, access_data: CreateAccessRequest
@@ -32,9 +36,9 @@ class AccessService:
         )
 
         if access_data.resource_ids:
-            stmt = select(Resource.id).where(Resource.id.in_(access_data.resource_ids))
-            result = await self.session.execute(stmt)
-            existing_ids = set(result.scalars().all())
+            existing_ids = await self.resource_repository.find_ids_by_ids(
+                access_data.resource_ids
+            )
 
             missing_ids = set(access_data.resource_ids) - existing_ids
             if missing_ids:
@@ -43,34 +47,28 @@ class AccessService:
                 )
 
         access = Access(name=access_data.name)
-        self.session.add(access)
-        await self.session.flush()
-        await self.session.refresh(access)
+        access = await self.access_repository.save(access)
+        access_id = access.id
 
         if access_data.resource_ids:
-            stmt = select(Resource).where(Resource.id.in_(access_data.resource_ids))
-            result = await self.session.execute(stmt)
-            resources = result.scalars().all()
-            
-            stmt = (
-                select(Access)
-                .where(Access.id == access.id)
-                .options(selectinload(Access.resources))
+            resources = await self.resource_repository.find_by_ids(
+                access_data.resource_ids
             )
-            result = await self.session.execute(stmt)
-            access_with_resources = result.scalar_one()
+            
+            access_with_resources = await self.access_repository.find_by_id_with_resources(
+                access_id
+            )
+            if access_with_resources is None:
+                raise ValueError(f"Доступ с ID {access_id} не найден после создания")
+            
             access_with_resources.resources.extend(resources)
-            await self.session.flush()
+            await self.access_repository.flush()
             
             access = access_with_resources
         else:
-            stmt = (
-                select(Access)
-                .where(Access.id == access.id)
-                .options(selectinload(Access.resources))
-            )
-            result = await self.session.execute(stmt)
-            access = result.scalar_one()
+            access = await self.access_repository.find_by_id_with_resources(access_id)
+            if access is None:
+                raise ValueError(f"Доступ с ID {access_id} не найден после создания")
 
         logger.debug(
             f"Доступ создан: id={access.id}, name={access.name}, resources_count={len(access.resources)}"
@@ -96,13 +94,7 @@ class AccessService:
         
         logger.debug(f"Получение доступа: id={access_id}")
 
-        stmt = (
-            select(Access)
-            .where(Access.id == access_id)
-            .options(selectinload(Access.resources))
-        )
-        result = await self.session.execute(stmt)
-        access = result.scalar_one_or_none()
+        access = await self.access_repository.find_by_id_with_resources(access_id)
 
         if access is None:
             raise ValueError(f"Доступ с ID {access_id} не найден")
@@ -116,12 +108,10 @@ class AccessService:
 
         logger.debug("Получение всех доступов")
 
-        stmt = select(Access).options(selectinload(Access.resources))
-        result = await self.session.execute(stmt)
-        accesses = result.scalars().all()
+        accesses = await self.access_repository.find_all_with_resources()
 
         logger.debug(f"Найдено доступов: {len(accesses)}")
-        return list(accesses)
+        return accesses
 
     async def get_groups_containing_access(
         self, access_id: int
@@ -129,21 +119,9 @@ class AccessService:
 
         logger.debug(f"Получение групп для доступа: access_id={access_id}")
 
-        stmt = select(Access).where(Access.id == access_id)
-        result = await self.session.execute(stmt)
-        access = result.scalar_one_or_none()
-        if access is None:
+        access_with_groups = await self.access_repository.find_by_id_with_groups(access_id)
+        if access_with_groups is None:
             raise ValueError(f"Доступ с ID {access_id} не найден")
-
-        stmt = (
-            select(Access)
-            .where(Access.id == access_id)
-            .options(
-                selectinload(Access.groups).selectinload(Group.accesses)
-            )
-        )
-        result = await self.session.execute(stmt)
-        access_with_groups = result.scalar_one()
 
         groups = [
             GroupModel(

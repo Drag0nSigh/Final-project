@@ -1,25 +1,21 @@
 import logging
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
-from access_control_service.db.conflict import Conflict
 from access_control_service.models.models import (
     Conflict as ConflictModel,
 )
+from access_control_service.repositories.protocols import ConflictRepositoryProtocol
 
 logger = logging.getLogger(__name__)
 
 
 class ConflictService:
 
-    def __init__(self, session: AsyncSession):
-        self.session = session
+    def __init__(self, conflict_repository: ConflictRepositoryProtocol):
+        self.conflict_repository = conflict_repository
 
     async def get_all_conflicts(self) -> list[ConflictModel]:
 
-        stmt = select(Conflict)
-        result = await self.session.execute(stmt)
-        conflicts = result.scalars().all()
+        conflicts = await self.conflict_repository.find_all()
 
         conflicts_out = [
             ConflictModel(group_id1=c.group_id1, group_id2=c.group_id2)

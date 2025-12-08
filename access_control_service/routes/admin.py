@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from access_control_service.dependencies import (
     get_redis_connection,
-    get_resource_service,
+    get_resource_service_admin,
     get_access_service,
     get_access_service_admin,
     get_group_service,
@@ -16,7 +16,7 @@ from access_control_service.services.cache import (
     invalidate_conflicts_matrix_cache
 )
 from access_control_service.services.protocols import (
-    ResourceServiceProtocol,
+    ResourceServiceAdminProtocol,
     AccessServiceProtocol,
     AccessServiceAdminProtocol,
     GroupServiceProtocol,
@@ -47,9 +47,9 @@ router = APIRouter(prefix="/admin", tags=["Admin"])
 @handle_errors(error_message_prefix="при создании ресурса")
 async def create_resource(
     resource_in: CreateResourceRequest,
-    resource_service: ResourceServiceProtocol = Depends(get_resource_service),
+    resource_service_admin: ResourceServiceAdminProtocol = Depends(get_resource_service_admin),
 ):
-    return await resource_service.create_resource(resource_in)
+    return await resource_service_admin.create_resource(resource_in)
 
 
 @router.delete("/resources/{resource_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -59,9 +59,9 @@ async def create_resource(
 )
 async def delete_resource(
     resource_id: int,
-    resource_service: ResourceServiceProtocol = Depends(get_resource_service),
+    resource_service_admin: ResourceServiceAdminProtocol = Depends(get_resource_service_admin),
 ):
-    await resource_service.delete_resource(resource_id)
+    await resource_service_admin.delete_resource(resource_id)
 
 
 @router.post("/accesses", response_model=CreateAccessResponse, status_code=status.HTTP_201_CREATED)

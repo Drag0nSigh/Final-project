@@ -1,12 +1,13 @@
 import logging
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
 from access_control_service.db.conflict import Conflict
-from access_control_service.db.group import Group
 from access_control_service.models.models import (
     CreateConflictRequest,
     CreateConflictResponse,
+)
+from access_control_service.repositories.protocols import (
+    GroupRepositoryProtocol,
+    ConflictRepositoryProtocol,
 )
 
 logger = logging.getLogger(__name__)
@@ -14,8 +15,13 @@ logger = logging.getLogger(__name__)
 
 class ConflictServiceAdmin:
 
-    def __init__(self, session: AsyncSession):
-        self.session = session
+    def __init__(
+        self,
+        group_repository: GroupRepositoryProtocol,
+        conflict_repository: ConflictRepositoryProtocol,
+    ):
+        self.group_repository = group_repository
+        self.conflict_repository = conflict_repository
 
     async def create_conflict(
         self, conflict_data: CreateConflictRequest
@@ -31,9 +37,9 @@ class ConflictServiceAdmin:
             f"Создание конфликта: group_id1={group_id1}, group_id2={group_id2}"
         )
 
-        stmt = select(Group.id).where(Group.id.in_([group_id1, group_id2]))
-        result = await self.session.execute(stmt)
-        existing_ids = set(result.scalars().all())
+        existing_ids = await self.group_repository.find_ids_by_ids(
+            [group_id1, group_id2]
+        )
 
         missing_ids = {group_id1, group_id2} - existing_ids
         if missing_ids:
@@ -42,16 +48,11 @@ class ConflictServiceAdmin:
         created_conflicts = []
 
         for g1, g2 in [(group_id1, group_id2), (group_id2, group_id1)]:
-            stmt = select(Conflict).where(
-                Conflict.group_id1 == g1, Conflict.group_id2 == g2
-            )
-            result = await self.session.execute(stmt)
-            existing_conflict = result.scalar_one_or_none()
+            existing_conflict = await self.conflict_repository.find_by_group_ids(g1, g2)
 
             if existing_conflict is None:
                 conflict = Conflict(group_id1=g1, group_id2=g2)
-                self.session.add(conflict)
-                await self.session.flush()
+                await self.conflict_repository.save(conflict)
                 created_conflicts.append(
                     CreateConflictResponse(group_id1=g1, group_id2=g2)
                 )
@@ -86,15 +87,10 @@ class ConflictServiceAdmin:
         deleted_count = 0
 
         for g1, g2 in [(group_id1, group_id2), (group_id2, group_id1)]:
-            stmt = select(Conflict).where(
-                Conflict.group_id1 == g1, Conflict.group_id2 == g2
-            )
-            result = await self.session.execute(stmt)
-            conflict = result.scalar_one_or_none()
+            conflict = await self.conflict_repository.find_by_group_ids(g1, g2)
 
             if conflict is not None:
-                self.session.delete(conflict)
-                await self.session.flush()
+                await self.conflict_repository.delete(conflict)
                 deleted_count += 1
                 logger.debug(f"Удален конфликт: group_id1={g1}, group_id2={g2}")
             else:

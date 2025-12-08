@@ -173,7 +173,7 @@ class PermissionService:
         else:
             permission.status = PermissionStatus.REJECTED.value
 
-        if self.redis_conn is not None and permission_type == PermissionType.GROUP:
+        if self.redis_conn is not None and permission_type.value == PermissionType.GROUP.value:
             await invalidate_user_groups_cache(self.redis_conn, user_id)
             logger.debug(
                 f"Кэш активных групп инвалидирован: user_id={user_id} (из-за изменения статуса заявки {request_id})"

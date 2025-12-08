@@ -1,18 +1,22 @@
 import logging
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 
-from access_control_service.db.access import Access
-from access_control_service.db.resource import Resource
+from access_control_service.repositories.protocols import (
+    AccessRepositoryProtocol,
+    ResourceRepositoryProtocol,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class AccessServiceAdmin:
 
-    def __init__(self, session: AsyncSession):
-        self.session = session
+    def __init__(
+        self,
+        access_repository: AccessRepositoryProtocol,
+        resource_repository: ResourceRepositoryProtocol,
+    ):
+        self.access_repository = access_repository
+        self.resource_repository = resource_repository
 
     async def add_resource_to_access(
         self, access_id: int, resource_id: int
@@ -22,19 +26,11 @@ class AccessServiceAdmin:
             f"Добавление ресурса к доступу: access_id={access_id}, resource_id={resource_id}"
         )
 
-        stmt = (
-            select(Access)
-            .where(Access.id == access_id)
-            .options(selectinload(Access.resources))
-        )
-        result = await self.session.execute(stmt)
-        access = result.scalar_one_or_none()
+        access = await self.access_repository.find_by_id_with_resources(access_id)
         if access is None:
             raise ValueError(f"Доступ с ID {access_id} не найден")
 
-        stmt = select(Resource).where(Resource.id == resource_id)
-        result = await self.session.execute(stmt)
-        resource = result.scalar_one_or_none()
+        resource = await self.resource_repository.find_by_id(resource_id)
         if resource is None:
             raise ValueError(f"Ресурс с ID {resource_id} не найден")
 
@@ -44,7 +40,7 @@ class AccessServiceAdmin:
             )
 
         access.resources.append(resource)
-        await self.session.flush()
+        await self.access_repository.flush()
 
 
     async def remove_resource_from_access(
@@ -55,13 +51,7 @@ class AccessServiceAdmin:
             f"Удаление ресурса из доступа: access_id={access_id}, resource_id={resource_id}"
         )
 
-        stmt = (
-            select(Access)
-            .where(Access.id == access_id)
-            .options(selectinload(Access.resources))
-        )
-        result = await self.session.execute(stmt)
-        access = result.scalar_one_or_none()
+        access = await self.access_repository.find_by_id_with_resources(access_id)
         if access is None:
             raise ValueError(f"Доступ с ID {access_id} не найден")
 
@@ -77,7 +67,7 @@ class AccessServiceAdmin:
             )
 
         access.resources.remove(resource_to_remove)
-        await self.session.flush()
+        await self.access_repository.flush()
 
         logger.debug(
             f"Ресурс удален из доступа: access_id={access_id}, resource_id={resource_id}"
@@ -87,19 +77,9 @@ class AccessServiceAdmin:
 
         logger.debug(f"Удаление доступа: id={access_id}")
 
-        stmt = select(Access).where(Access.id == access_id)
-        result = await self.session.execute(stmt)
-        access = result.scalar_one_or_none()
-        if access is None:
+        access_with_groups = await self.access_repository.find_by_id_with_groups(access_id)
+        if access_with_groups is None:
             raise ValueError(f"Доступ с ID {access_id} не найден")
-
-        stmt = (
-            select(Access)
-            .where(Access.id == access_id)
-            .options(selectinload(Access.groups))
-        )
-        result = await self.session.execute(stmt)
-        access_with_groups = result.scalar_one()
 
         if access_with_groups.groups:
             group_ids = [group.id for group in access_with_groups.groups]
@@ -109,8 +89,7 @@ class AccessServiceAdmin:
             )
 
         access_name = access_with_groups.name
-        self.session.delete(access_with_groups)
-        await self.session.flush()
+        await self.access_repository.delete(access_with_groups)
 
         logger.debug(f"Доступ удален: id={access_id}, name={access_name}")
 

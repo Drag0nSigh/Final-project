@@ -22,15 +22,18 @@ from access_control_service.models.models import (
 
 class ResourceServiceProtocol(Protocol):
 
-    async def create_resource(
-        self, resource_data: CreateResourceRequest
-    ) -> CreateResourceResponse:
-        ...
-
     async def get_resource(self, resource_id: int) -> Resource:
         ...
 
     async def get_all_resources(self) -> list[Resource]:
+        ...
+
+
+class ResourceServiceAdminProtocol(Protocol):
+
+    async def create_resource(
+        self, resource_data: CreateResourceRequest
+    ) -> CreateResourceResponse:
         ...
 
     async def delete_resource(self, resource_id: int) -> None:

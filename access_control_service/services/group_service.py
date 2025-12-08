@@ -1,10 +1,6 @@
 import logging
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 
 from access_control_service.db.group import Group
-from access_control_service.db.access import Access
 from access_control_service.models.models import (
     CreateGroupRequest,
     CreateGroupResponse,
@@ -12,14 +8,26 @@ from access_control_service.models.models import (
     Access as AccessModel,
     Resource as ResourceModel,
 )
+from access_control_service.repositories.protocols import (
+    GroupRepositoryProtocol,
+    AccessRepositoryProtocol,
+    ConflictRepositoryProtocol,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class GroupService:
 
-    def __init__(self, session: AsyncSession):
-        self.session = session
+    def __init__(
+        self,
+        group_repository: GroupRepositoryProtocol,
+        access_repository: AccessRepositoryProtocol,
+        conflict_repository: ConflictRepositoryProtocol,
+    ):
+        self.group_repository = group_repository
+        self.access_repository = access_repository
+        self.conflict_repository = conflict_repository
 
     async def create_group(
         self, group_data: CreateGroupRequest
@@ -30,9 +38,9 @@ class GroupService:
         )
 
         if group_data.access_ids:
-            stmt = select(Access.id).where(Access.id.in_(group_data.access_ids))
-            result = await self.session.execute(stmt)
-            existing_ids = set(result.scalars().all())
+            existing_ids = await self.access_repository.find_ids_by_ids(
+                group_data.access_ids
+            )
 
             missing_ids = set(group_data.access_ids) - existing_ids
             if missing_ids:
@@ -41,28 +49,26 @@ class GroupService:
                 )
 
         group = Group(name=group_data.name)
-        self.session.add(group)
-        await self.session.flush()
-        await self.session.refresh(group)
+        group = await self.group_repository.save(group)
+        group_id = group.id
 
         if group_data.access_ids:
-            stmt = select(Access).where(Access.id.in_(group_data.access_ids))
-            result = await self.session.execute(stmt)
-            accesses = result.scalars().all()
-            
-            stmt = (
-                select(Group)
-                .where(Group.id == group.id)
-                .options(selectinload(Group.accesses))
+            accesses = await self.access_repository.find_by_ids(
+                group_data.access_ids
             )
-            result = await self.session.execute(stmt)
-            group_with_accesses = result.scalar_one()
+            
+            group_with_accesses = await self.group_repository.find_by_id_with_accesses(group_id)
+            if group_with_accesses is None:
+                raise ValueError(f"Группа с ID {group_id} не найдена после создания")
+            
             group_with_accesses.accesses.extend(accesses)
-            await self.session.flush()
+            await self.group_repository.flush()
             
             group = group_with_accesses
-
-        await self.session.refresh(group, ["accesses"])
+        else:
+            group = await self.group_repository.find_by_id_with_accesses(group_id)
+            if group is None:
+                raise ValueError(f"Группа с ID {group_id} не найдена после создания")
 
         logger.debug(
             f"Группа создана: id={group.id}, name={group.name}, accesses_count={len(group.accesses)}"
@@ -87,15 +93,7 @@ class GroupService:
 
         logger.debug(f"Получение группы: id={group_id}")
 
-        stmt = (
-            select(Group)
-            .where(Group.id == group_id)
-            .options(
-                selectinload(Group.accesses).selectinload(Access.resources)
-            )
-        )
-        result = await self.session.execute(stmt)
-        group = result.scalar_one_or_none()
+        group = await self.group_repository.find_by_id_with_accesses_and_resources(group_id)
 
         if group is None:
             raise ValueError(f"Группа с ID {group_id} не найдена")
@@ -109,17 +107,10 @@ class GroupService:
 
         logger.debug("Получение всех групп")
 
-        stmt = (
-            select(Group)
-            .options(
-                selectinload(Group.accesses).selectinload(Access.resources)
-            )
-        )
-        result = await self.session.execute(stmt)
-        groups = result.scalars().all()
+        groups = await self.group_repository.find_all_with_accesses_and_resources()
 
         logger.debug(f"Найдено групп: {len(groups)}")
-        return list(groups)
+        return groups
 
     async def get_group_accesses(
         self, group_id: int
@@ -127,15 +118,7 @@ class GroupService:
 
         logger.debug(f"Получение доступов для группы: group_id={group_id}")
 
-        stmt = (
-            select(Group)
-            .where(Group.id == group_id)
-            .options(
-                selectinload(Group.accesses).selectinload(Access.resources)
-            )
-        )
-        result = await self.session.execute(stmt)
-        group_with_accesses = result.scalar_one_or_none()
+        group_with_accesses = await self.group_repository.find_by_id_with_accesses_and_resources(group_id)
         
         if group_with_accesses is None:
             logger.warning(f"Группа не найдена: id={group_id}")
@@ -168,19 +151,11 @@ class GroupService:
         self, group_id: int, access_id: int
     ) -> None:
 
-        stmt = (
-            select(Group)
-            .where(Group.id == group_id)
-            .options(selectinload(Group.accesses))
-        )
-        result = await self.session.execute(stmt)
-        group = result.scalar_one_or_none()
+        group = await self.group_repository.find_by_id_with_accesses(group_id)
         if group is None:
             raise ValueError(f"Группа с ID {group_id} не найдена")
 
-        stmt = select(Access).where(Access.id == access_id)
-        result = await self.session.execute(stmt)
-        access = result.scalar_one_or_none()
+        access = await self.access_repository.find_by_id(access_id)
         if access is None:
             raise ValueError(f"Доступ с ID {access_id} не найден")
 
@@ -190,19 +165,13 @@ class GroupService:
             )
 
         group.accesses.append(access)
-        await self.session.flush()
+        await self.group_repository.flush()
 
     async def remove_access_from_group(
         self, group_id: int, access_id: int
     ) -> None:
 
-        stmt = (
-            select(Group)
-            .where(Group.id == group_id)
-            .options(selectinload(Group.accesses))
-        )
-        result = await self.session.execute(stmt)
-        group = result.scalar_one_or_none()
+        group = await self.group_repository.find_by_id_with_accesses(group_id)
         if group is None:
             raise ValueError(f"Группа с ID {group_id} не найдена")
 
@@ -218,20 +187,11 @@ class GroupService:
             )
 
         group.accesses.remove(access_to_remove)
-        await self.session.flush()
+        await self.group_repository.flush()
 
     async def delete_group(self, group_id: int) -> None:
 
-        stmt = (
-            select(Group)
-            .where(Group.id == group_id)
-            .options(
-                selectinload(Group.conflicts_as_group1),
-                selectinload(Group.conflicts_as_group2)
-            )
-        )
-        result = await self.session.execute(stmt)
-        group = result.scalar_one_or_none()
+        group = await self.group_repository.find_by_id_with_conflicts(group_id)
         if group is None:
             raise ValueError(f"Группа с ID {group_id} не найдена")
 
@@ -241,7 +201,6 @@ class GroupService:
                 f"Группа с ID {group_id} не может быть удалена, так как имеет конфликты"
             )
 
-        self.session.delete(group)
-        await self.session.flush()
+        await self.group_repository.delete(group)
 
 

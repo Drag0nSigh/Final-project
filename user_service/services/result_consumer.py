@@ -136,7 +136,6 @@ class ResultConsumer:
                                 f"или request_id некорректен."
                             )
                         else:
-                            await session.commit()
                             if approved:
                                 logger.debug(
                                     f"Заявка одобрена и активирована: request_id={request_id}, user_id={user_id}, "
@@ -147,6 +146,8 @@ class ResultConsumer:
                                     f"Заявка отклонена: request_id={request_id}, user_id={user_id}, "
                                     f"permission_type={permission_type}, item_id={item_id}, новый статус={permission.status}"
                                 )
+                            
+                            await session.commit()
                     except Exception as exc:
                         await session.rollback()
                         logger.exception(
