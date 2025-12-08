@@ -12,7 +12,6 @@ USER_GROUPS_KEY_PREFIX = "user:{user_id}:active_groups"
 
 
 def _build_user_groups_key(user_id: int) -> str:
-    """Формирует ключ Redis для хранения активных групп пользователя."""
 
     return USER_GROUPS_KEY_PREFIX.format(user_id=user_id)
 
@@ -21,7 +20,6 @@ async def get_user_groups_from_cache(
     redis_conn: redis.Redis[Any],
     user_id: int,
 ) -> list[dict[str, Any]] | None:
-    """Пытается получить активные группы пользователя из кэша."""
 
     key = _build_user_groups_key(user_id)
     cached_value = await redis_conn.get(key)
@@ -40,7 +38,6 @@ async def set_user_groups_cache(
     user_id: int,
     groups: list[dict[str, Any]],
 ) -> None:
-    """Сохраняет список активных групп в Redis с TTL из настроек."""
 
     key = _build_user_groups_key(user_id)
     ttl = get_settings().cache_ttl_user_groups_seconds
@@ -51,7 +48,6 @@ async def invalidate_user_groups_cache(
     redis_conn: redis.Redis[Any],
     user_id: int,
 ) -> None:
-    """Удаляет кэш активных групп конкретного пользователя."""
 
     key = _build_user_groups_key(user_id)
     await redis_conn.delete(key)

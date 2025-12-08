@@ -15,7 +15,6 @@ class RedisClient:
 
     @property
     def connection(self) -> redis.Redis[Any]:
-        """Ленивая выдача текущего подключения."""
 
         if self._connection is None:
             raise RuntimeError(
@@ -24,7 +23,6 @@ class RedisClient:
         return self._connection
 
     async def connect(self) -> None:
-        """Устанавливает асинхронное соединение с Redis, если его ещё нет"""
 
         if self._connection is not None:
             return
@@ -33,7 +31,6 @@ class RedisClient:
         self._connection = redis.from_url(dsn, decode_responses=True)
 
     async def close(self) -> None:
-        """Закрывает соединение с Redis, если оно существует."""
 
         if self._connection is None:
             return
@@ -42,5 +39,4 @@ class RedisClient:
         self._connection = None
 
 
-# Глобальный singleton, который будем импортировать в других частях кода.
 redis_client = RedisClient()

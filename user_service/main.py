@@ -8,6 +8,7 @@ import sys
 from user_service.routes import permissions, health, admin
 from user_service.dependencies import get_database, get_redis_client, get_rabbitmq_manager
 from user_service.services.result_consumer import ResultConsumer
+from user_service.services.permission_service_factory import PermissionServiceFactory
 from user_service.config.settings import get_settings
 
 settings = get_settings()
@@ -59,10 +60,15 @@ async def lifespan(app: FastAPI):
         await db.close()
         raise
 
-    result_consumer = ResultConsumer(
+    service_factory = PermissionServiceFactory(
         db=db,
         redis_client=redis_client,
-        rabbitmq_manager=rabbitmq_manager
+    )
+    
+    result_consumer = ResultConsumer(
+        service_factory=service_factory,
+        rabbitmq_manager=rabbitmq_manager,
+        db=db
     )
     
     consumer_task: asyncio.Task | None = None

@@ -13,10 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 class RabbitMQManager:
-    """Менеджер подключения к RabbitMQ для User Service."""
 
     def __init__(self) -> None:
-        """Инициализация менеджера с настройками из конфигурации."""
 
         self._settings = get_settings()
         self._connection: AbstractConnection | None = None
@@ -26,7 +24,6 @@ class RabbitMQManager:
 
     @property
     def is_connected(self) -> bool:
-        """Показывает, установлено ли соединение с RabbitMQ."""
 
         return (
             self._connection is not None
@@ -35,24 +32,20 @@ class RabbitMQManager:
 
     @property
     def channel(self) -> AbstractChannel | None:
-        """Возвращает текущий канал RabbitMQ (если подключение установлено)."""
 
         return self._channel
 
     @property
     def validation_queue(self) -> AbstractQueue | None:
-        """Возвращает объект очереди `validation_queue` (если объявлена)."""
 
         return self._validation_queue
 
     @property
     def result_queue(self) -> AbstractQueue | None:
-        """Возвращает объект очереди `result_queue` (если объявлена)."""
 
         return self._result_queue
 
     async def connect(self) -> None:
-        """Подключение к RabbitMQ и объявление очередей."""
 
         if self.is_connected:
             logger.warning("RabbitMQ уже подключён, повторное подключение пропущено")
@@ -65,7 +58,6 @@ class RabbitMQManager:
             self._connection = await aio_pika.connect_robust(rabbitmq_url)
             self._channel = await self._connection.channel()
 
-            # Объявление очереди validation_queue (для отправки запросов на валидацию)
             validation_queue_name = self._settings.rabbitmq_validation_queue
             self._validation_queue = await self._channel.declare_queue(
                 validation_queue_name,
@@ -73,7 +65,6 @@ class RabbitMQManager:
             )
             logger.debug(f"Очередь объявлена: {validation_queue_name}")
 
-            # Объявление очереди result_queue (для получения результатов валидации)
             result_queue_name = self._settings.rabbitmq_result_queue
             self._result_queue = await self._channel.declare_queue(
                 result_queue_name,
@@ -89,13 +80,11 @@ class RabbitMQManager:
             raise
 
     async def close(self) -> None:
-        """Закрытие соединения с RabbitMQ."""
 
         await self._cleanup()
         logger.info("RabbitMQ соединение закрыто")
 
     async def _cleanup(self) -> None:
-        """Внутренний метод для очистки ресурсов RabbitMQ."""
 
         try:
             if self._channel and not self._channel.is_closed:
@@ -121,7 +110,6 @@ class RabbitMQManager:
         item_id: int,
         request_id: str,
     ) -> None:
-        """Публикует запрос на валидацию в очередь `validation_queue`."""
 
         if not self.is_connected or not self._channel:
             raise RuntimeError("RabbitMQ не подключён. Вызовите connect() сначала.")
@@ -158,5 +146,4 @@ class RabbitMQManager:
             raise
 
 
-# Глобальный singleton, который будем импортировать в зависимостях.
 rabbitmq_manager = RabbitMQManager()

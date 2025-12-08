@@ -11,7 +11,6 @@ R = TypeVar("R")
 
 
 def handle_errors(error_message: str):
-    """Декоратор для обработки ошибок в эндпоинтах."""
     
     def decorator(func: Callable[P, R]) -> Callable[P, R]:
         @wraps(func)

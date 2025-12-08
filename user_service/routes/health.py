@@ -9,7 +9,6 @@ router = APIRouter()
 
 @router.get("")
 async def health_check():
-    """Проверка работоспособности сервиса"""
     return {
         "status": "healthy",
         "service": "user-service",
@@ -19,7 +18,6 @@ async def health_check():
 
 @router.get("/ready")
 async def readiness_check():
-    """Проверка готовности сервиса (БД, Redis, RabbitMQ)."""
 
     db = get_database()
     redis_client = get_redis_client()

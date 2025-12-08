@@ -17,6 +17,12 @@ from user_service.db.protocols import (
     RabbitMQManagerProtocol,
     PermissionServiceProtocol,
 )
+from user_service.repositories.protocols import (
+    UserRepositoryProtocol,
+    UserPermissionRepositoryProtocol,
+)
+from user_service.repositories.user_repository import UserRepository
+from user_service.repositories.user_permission_repository import UserPermissionRepository
 from user_service.services.permissions_service import PermissionService
 from fastapi import Depends
 
@@ -74,16 +80,29 @@ async def get_redis_connection() -> AsyncGenerator[redis.Redis, None]:
     yield connection
 
 
-def get_permission_service(
+def get_user_repository(
     session: AsyncSession = Depends(get_db_session),
+) -> UserRepositoryProtocol:
+    return UserRepository(session=session)
+
+
+def get_user_permission_repository(
+    session: AsyncSession = Depends(get_db_session),
+) -> UserPermissionRepositoryProtocol:
+    return UserPermissionRepository(session=session)
+
+
+def get_permission_service(
+    permission_repository: UserPermissionRepositoryProtocol = Depends(get_user_permission_repository),
     redis_conn: redis.Redis[Any] = Depends(get_redis_connection),
 ) -> PermissionServiceProtocol:
-    return PermissionService(session=session, redis_conn=redis_conn)
+    return PermissionService(permission_repository=permission_repository, redis_conn=redis_conn)
 
 
 def create_permission_service(
     session: AsyncSession,
     redis_conn: redis.Redis[Any] | None = None,
 ) -> PermissionServiceProtocol:
-    return PermissionService(session=session, redis_conn=redis_conn)
+    permission_repository = UserPermissionRepository(session=session)
+    return PermissionService(permission_repository=permission_repository, redis_conn=redis_conn)
 

@@ -35,8 +35,6 @@ async def request_access(
     settings: Settings = Depends(get_settings_dependency),
     rabbitmq: RabbitMQManagerProtocol = Depends(get_rabbitmq_manager),
 ):
-    """Создание заявки на получение доступа или группы прав."""
-
     logger.debug(
         f"Получен запрос на создание заявки: user={request.user_id} permission_type={request.permission_type} item_id={request.item_id}"
     )
@@ -75,8 +73,6 @@ async def revoke_permission(
     request: RevokePermissionRequest,
     service: PermissionServiceProtocol = Depends(get_permission_service),
 ):
-    """Отзыв права у пользователя (синхронная операция)."""
-
     logger.debug(
         f"Получен запрос на отзыв права: user={user_id} permission_type={request.permission_type} item_id={request.item_id}"
     )
@@ -102,8 +98,6 @@ async def get_user_permissions(
     user_id: int,
     service: PermissionServiceProtocol = Depends(get_permission_service),
 ):
-    """Получение всех прав пользователя."""
-
     logger.debug(f"Получение списка прав пользователя user={user_id}")
 
     return await service.get_permissions(user_id)
@@ -115,8 +109,6 @@ async def get_current_active_groups(
     user_id: int,
     service: PermissionServiceProtocol = Depends(get_permission_service),
 ):
-    """Получение активных групп пользователя. """
-
     logger.debug(f"Получение активных групп пользователя user={user_id}")
 
     return await service.get_active_groups(user_id)

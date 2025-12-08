@@ -1,4 +1,5 @@
 from typing import Protocol, Any
+from contextlib import AbstractAsyncContextManager
 
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 import redis.asyncio as redis
@@ -106,5 +107,13 @@ class PermissionServiceProtocol(Protocol):
         permission_type: PermissionType,
         item_id: int,
     ) -> UserPermission | None:
+        ...
+
+
+class PermissionServiceFactoryProtocol(Protocol):
+
+    def create_with_session(
+        self,
+    ) -> AbstractAsyncContextManager[PermissionServiceProtocol]:
         ...
 

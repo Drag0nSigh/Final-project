@@ -6,9 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Полный набор конфигурационных параметров User Service."""
 
-    # --- Настройки базы данных -------------------------------------------------
     db_host: str = Field(
         default="postgres-user",
     )
@@ -99,7 +97,6 @@ class Settings(BaseSettings):
     )
 
     def build_database_url(self) -> str:
-        """Сконструировать основную строку подключения к PostgreSQL."""
 
         return (
             self.database_url
@@ -108,7 +105,6 @@ class Settings(BaseSettings):
         )
 
     def build_server_database_url(self) -> str:
-        """Формирует строку подключения к серверной БД."""
 
         return (
             self.server_database_url
@@ -117,7 +113,6 @@ class Settings(BaseSettings):
         )
 
     def build_redis_dsn(self) -> str:
-        """Формирует DSN-строку Redis в формате redis://."""
 
         credentials = ""
         if self.redis_username and self.redis_password:
@@ -128,7 +123,6 @@ class Settings(BaseSettings):
         return f"redis://{credentials}{self.redis_host}:{self.redis_port}/{self.redis_db}"
 
     def build_rabbitmq_url(self) -> str:
-        """Формирует URL для подключения к RabbitMQ (AMQP)."""
 
         return (
             "amqp://"
@@ -137,13 +131,11 @@ class Settings(BaseSettings):
         )
 
 
-#: Название переменной окружения, откуда читается путь до .env файла.
 ENV_FILE_ENV_VAR: Final[str] = "USER_SERVICE_ENV_FILE"
 
 
 @lru_cache(maxsize=1)
 def get_settings(env_file: str | None = None) -> Settings:
-    """Возвращает singleton-экземпляр настроек."""
 
     if env_file is None:
         import os

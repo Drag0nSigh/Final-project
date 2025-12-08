@@ -4,13 +4,11 @@ import os
 from typing import AsyncGenerator
 
 from user_service.db.base import Base
-# Импорт моделей для регистрации в Base.metadata перед созданием таблиц
 from user_service.db.user import User  # noqa: F401
 from user_service.db.userpermission import UserPermission  # noqa: F401
 
 
 class Database:
-    """Класс для управления подключением к БД"""
     
     def __init__(self):
         self.DB_HOST = os.getenv("DB_HOST", "postgres")
@@ -33,7 +31,6 @@ class Database:
         self.AsyncSessionLocal: async_sessionmaker | None = None
     
     async def _check_database_exists(self) -> bool:
-        """Проверяет, существует ли БД"""
         try:
             temp_engine = create_async_engine(
                 self.SERVER_URL,
@@ -57,7 +54,6 @@ class Database:
             return False
     
     async def _create_database(self):
-        """Создает БД, если её нет"""
         exists = await self._check_database_exists()
         
         if exists:
@@ -83,7 +79,6 @@ class Database:
             raise
     
     async def connect(self):
-        """Создает подключение к БД"""
         if self.engine is not None:
             print("База данных уже подключена")
             return
@@ -107,7 +102,6 @@ class Database:
         print(f"Подключено к базе данных '{self.DB_NAME}'")
     
     async def init_db(self):
-        """Инициализация БД - создание таблиц"""
         if self.engine is None:
             await self.connect()
         
@@ -131,7 +125,6 @@ class Database:
             print("Таблицы базы данных созданы успешно")
     
     async def close(self):
-        """Закрытие всех подключений к БД"""
         if self.engine is not None:
             await self.engine.dispose()
             self.engine = None
@@ -139,5 +132,4 @@ class Database:
             print(f"Отключено от базы данных '{self.DB_NAME}'")
 
 
-# Глобальный экземпляр
 db = Database()

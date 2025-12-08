@@ -11,7 +11,6 @@ from user_service.models.models import (
 
 
 def permission_model_to_schema(permission: UserPermissionModel) -> PermissionResponse:
-    """Преобразует SQLAlchemy-модель ``UserPermission`` в ``PermissionResponse``."""
 
     return PermissionResponse(
         id=permission.id,
@@ -26,15 +25,13 @@ def permission_model_to_schema(permission: UserPermissionModel) -> PermissionRes
 def permissions_to_active_groups_schema(
     permissions: Iterable[UserPermissionModel],
 ) -> GetActiveGroupsResponse:
-    """Формирует ответ ``GetActiveGroupsResponse`` из набора ``UserPermission``."""
 
-    groups: list[ActiveGroup] = []
-    for permission in permissions:
-        groups.append(
-            ActiveGroup(
-                id=permission.item_id,
-                name=permission.item_name,
-            )
+    groups = [
+        ActiveGroup(
+            id=permission.item_id,
+            name=permission.item_name,
         )
+        for permission in permissions
+    ]
 
     return GetActiveGroupsResponse(groups=groups)
