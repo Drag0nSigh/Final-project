@@ -36,6 +36,3 @@ class RedisClient:
 
         await self._connection.close()
         self._connection = None
-
-
-redis_client = RedisClient()

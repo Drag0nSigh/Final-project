@@ -7,13 +7,11 @@ from access_control_service.models.models import (
     Resource as ResourceModel,
 )
 from access_control_service.services.protocols import AccessServiceProtocol
-from access_control_service.utils.error_handlers import handle_errors
 
 router = APIRouter()
 
 
 @router.get("/{access_id}", response_model=AccessOut)
-@handle_errors(error_message_prefix="при получении доступа")
 async def get_access(
     access_id: int,
     access_service: AccessServiceProtocol = Depends(get_access_service),
@@ -38,7 +36,6 @@ async def get_access(
 
 
 @router.get("", response_model=list[AccessOut])
-@handle_errors(error_message_prefix="при получении всех доступов")
 async def get_all_accesses(
     access_service: AccessServiceProtocol = Depends(get_access_service),
 ):
@@ -63,7 +60,6 @@ async def get_all_accesses(
 
 
 @router.get("/{access_id}/groups", response_model=GetAccessGroupsResponse)
-@handle_errors(error_message_prefix="при получении групп для доступа")
 async def get_groups_by_access(
     access_id: int,
     access_service: AccessServiceProtocol = Depends(get_access_service),

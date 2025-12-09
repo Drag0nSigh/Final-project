@@ -5,13 +5,14 @@ from access_control_service.models.models import (
     Resource as ResourceOut,
 )
 from access_control_service.services.protocols import ResourceServiceProtocol
-from access_control_service.utils.error_handlers import handle_errors
+
+router = APIRouter()
+
 
 router = APIRouter()
 
 
 @router.get("/{resource_id}", response_model=ResourceOut)
-@handle_errors(error_message_prefix="при получении ресурса")
 async def get_resource(
     resource_id: int,
     resource_service: ResourceServiceProtocol = Depends(get_resource_service),
@@ -21,7 +22,6 @@ async def get_resource(
 
 
 @router.get("", response_model=list[ResourceOut])
-@handle_errors(error_message_prefix="при получении всех ресурсов")
 async def get_all_resources(
     resource_service: ResourceServiceProtocol = Depends(get_resource_service),
 ):

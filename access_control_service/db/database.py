@@ -141,14 +141,11 @@ class Database:
             await self.connect()
         
         await self.run_migrations()
-    
+        
     async def close(self):
         if self.engine is not None:
             await self.engine.dispose()
             self.engine = None
             self.AsyncSessionLocal = None
             logger.debug(f"Отключено от базы данных '{self.DB_NAME}'")
-
-
-db = Database()
 

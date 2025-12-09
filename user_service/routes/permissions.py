@@ -19,7 +19,6 @@ from user_service.dependencies import (
 )
 from user_service.config.settings import Settings
 from user_service.db.protocols import RabbitMQManagerProtocol, PermissionServiceProtocol
-from user_service.utils.error_handlers import handle_errors
 
 
 logger = logging.getLogger(__name__)
@@ -28,7 +27,6 @@ router = APIRouter()
 
 
 @router.post("/request", response_model=RequestAccessResponse)
-@handle_errors("Не удалось создать заявку")
 async def request_access(
     request: RequestAccessRequest,
     service: PermissionServiceProtocol = Depends(get_permission_service),
@@ -67,7 +65,6 @@ async def request_access(
 
 
 @router.delete("/users/{user_id}/permissions", response_model=RevokePermissionResponse)
-@handle_errors("Не удалось отозвать право")
 async def revoke_permission(
     user_id: int,
     request: RevokePermissionRequest,
@@ -93,7 +90,6 @@ async def revoke_permission(
 
 
 @router.get("/users/{user_id}/permissions", response_model=GetUserPermissionsResponse)
-@handle_errors("Не удалось получить список прав")
 async def get_user_permissions(
     user_id: int,
     service: PermissionServiceProtocol = Depends(get_permission_service),
@@ -104,7 +100,6 @@ async def get_user_permissions(
 
 
 @router.get("/users/{user_id}/current_active_groups", response_model=GetActiveGroupsResponse)
-@handle_errors("Не удалось получить активные группы пользователя")
 async def get_current_active_groups(
     user_id: int,
     service: PermissionServiceProtocol = Depends(get_permission_service),

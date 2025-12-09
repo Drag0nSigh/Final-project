@@ -14,13 +14,10 @@ from access_control_service.services.cache import (
     get_group_accesses_from_cache,
     set_group_accesses_cache
 )
-from access_control_service.utils.error_handlers import handle_errors
-
 router = APIRouter()
 
 
 @router.get("/{group_id}", response_model=GroupOut)
-@handle_errors(error_message_prefix="при получении группы")
 async def get_group(
     group_id: int,
     group_service: GroupServiceProtocol = Depends(get_group_service),
@@ -30,7 +27,6 @@ async def get_group(
 
 
 @router.get("", response_model=list[GroupOut])
-@handle_errors(error_message_prefix="при получении всех групп")
 async def get_all_groups(
     group_service: GroupServiceProtocol = Depends(get_group_service),
 ):
@@ -39,7 +35,6 @@ async def get_all_groups(
 
 
 @router.get("/{group_id}/accesses", response_model=GetGroupAccessesResponse)
-@handle_errors(error_message_prefix="при получении доступов группы")
 async def get_accesses_by_group(
     group_id: int,
     redis_conn: redis.Redis = Depends(get_redis_connection),

@@ -38,13 +38,10 @@ from access_control_service.models.models import (
     AddResourceToAccessRequest,
     Resource as ResourceModel,
 )
-from access_control_service.utils.error_handlers import handle_errors
-
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
 
 @router.post("/resources", response_model=CreateResourceResponse, status_code=status.HTTP_201_CREATED)
-@handle_errors(error_message_prefix="при создании ресурса")
 async def create_resource(
     resource_in: CreateResourceRequest,
     resource_service_admin: ResourceServiceAdminProtocol = Depends(get_resource_service_admin),
@@ -53,10 +50,6 @@ async def create_resource(
 
 
 @router.delete("/resources/{resource_id}", status_code=status.HTTP_204_NO_CONTENT)
-@handle_errors(
-    value_error_status=status.HTTP_409_CONFLICT,
-    error_message_prefix="при удалении ресурса"
-)
 async def delete_resource(
     resource_id: int,
     resource_service_admin: ResourceServiceAdminProtocol = Depends(get_resource_service_admin),
@@ -65,7 +58,6 @@ async def delete_resource(
 
 
 @router.post("/accesses", response_model=CreateAccessResponse, status_code=status.HTTP_201_CREATED)
-@handle_errors(error_message_prefix="при создании доступа")
 async def create_access(
     access_in: CreateAccessRequest,
     access_service: AccessServiceProtocol = Depends(get_access_service),
@@ -74,7 +66,6 @@ async def create_access(
 
 
 @router.post("/accesses/{access_id}/resources", response_model=AccessOut)
-@handle_errors(error_message_prefix="при добавлении ресурса к доступу")
 async def add_resource_to_access(
     access_id: int,
     resource_data: AddResourceToAccessRequest,
@@ -108,7 +99,6 @@ async def add_resource_to_access(
 
 
 @router.delete("/accesses/{access_id}/resources/{resource_id}", status_code=status.HTTP_204_NO_CONTENT)
-@handle_errors(error_message_prefix="при удалении ресурса из доступа")
 async def remove_resource_from_access(
     access_id: int,
     resource_id: int,
@@ -123,10 +113,6 @@ async def remove_resource_from_access(
 
 
 @router.delete("/accesses/{access_id}", status_code=status.HTTP_204_NO_CONTENT)
-@handle_errors(
-    value_error_status=status.HTTP_409_CONFLICT,
-    error_message_prefix="при удалении доступа"
-)
 async def delete_access(
     access_id: int,
     redis_conn: redis.Redis = Depends(get_redis_connection),
@@ -138,7 +124,6 @@ async def delete_access(
 
 
 @router.post("/groups", response_model=CreateGroupResponse, status_code=status.HTTP_201_CREATED)
-@handle_errors(error_message_prefix="при создании группы")
 async def create_group(
     group_in: CreateGroupRequest,
     group_service: GroupServiceProtocol = Depends(get_group_service),
@@ -147,7 +132,6 @@ async def create_group(
 
 
 @router.post("/groups/{group_id}/accesses/{access_id}", status_code=status.HTTP_204_NO_CONTENT)
-@handle_errors(error_message_prefix="при добавлении доступа к группе")
 async def add_access_to_group(
     group_id: int,
     access_id: int,
@@ -161,7 +145,6 @@ async def add_access_to_group(
 
 
 @router.delete("/groups/{group_id}/accesses/{access_id}", status_code=status.HTTP_204_NO_CONTENT)
-@handle_errors(error_message_prefix="при удалении доступа из группы")
 async def remove_access_from_group(
     group_id: int,
     access_id: int,
@@ -175,10 +158,6 @@ async def remove_access_from_group(
 
 
 @router.delete("/groups/{group_id}", status_code=status.HTTP_204_NO_CONTENT)
-@handle_errors(
-    value_error_status=status.HTTP_409_CONFLICT,
-    error_message_prefix="при удалении группы"
-)
 async def delete_group(
     group_id: int,
     redis_conn: redis.Redis = Depends(get_redis_connection),
@@ -190,10 +169,6 @@ async def delete_group(
 
 
 @router.post("/conflicts", response_model=list[CreateConflictResponse], status_code=status.HTTP_201_CREATED)
-@handle_errors(
-    value_error_status=status.HTTP_400_BAD_REQUEST,
-    error_message_prefix="при создании конфликта"
-)
 async def create_conflict(
     conflict_in: CreateConflictRequest,
     redis_conn: redis.Redis = Depends(get_redis_connection),
@@ -211,7 +186,6 @@ async def create_conflict(
 
 
 @router.delete("/conflicts", status_code=status.HTTP_204_NO_CONTENT)
-@handle_errors(error_message_prefix="при удалении конфликта")
 async def delete_conflict(
     conflict_in: DeleteConflictRequest,
     redis_conn: redis.Redis = Depends(get_redis_connection),
