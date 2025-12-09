@@ -1,8 +1,13 @@
 import logging
+import os
+import asyncio
+from pathlib import Path
+from typing import AsyncGenerator
+
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker, AsyncEngine
 from sqlalchemy import text
-import os
-from typing import AsyncGenerator
+from alembic.config import Config
+from alembic import command
 
 from access_control_service.db.base import Base
 from access_control_service.db.resource import Resource  # noqa: F401
@@ -17,7 +22,7 @@ class Database:
     
     def __init__(self):
         self.DB_HOST = os.getenv("DB_HOST", "postgres")
-        self.DB_PORT = "5432"
+        self.DB_PORT = os.getenv("DB_PORT", "5432")
         self.DB_USER = os.getenv("DB_USER", "postgres")
         self.DB_PASSWORD = os.getenv("DB_PASSWORD", "postgres")
         self.DB_NAME = os.getenv("DB_NAME", "access_control_service")
@@ -105,29 +110,37 @@ class Database:
         )
         
         logger.debug(f"Подключено к базе данных '{self.DB_NAME}'")
+
+    async def run_migrations(self):
+        if self.engine is None:
+            await self.connect()
+
+        alembic_ini_path = Path(__file__).parent.parent / "alembic.ini"
+        if not alembic_ini_path.exists():
+            raise FileNotFoundError(f"Alembic config file not found: {alembic_ini_path}")
+
+        alembic_cfg = Config(str(alembic_ini_path))
+        alembic_cfg.set_main_option(
+            "script_location",
+            str(alembic_ini_path.parent / "alembic"),
+        )
+        alembic_cfg.set_main_option("sqlalchemy.url", self.DATABASE_URL)
+
+        try:
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(None, command.upgrade, alembic_cfg, "head")
+            logger.debug("Миграции Alembic применены успешно")
+        except Exception as e:
+            logger.debug(f"Ошибка при применении миграций Alembic: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
     
     async def init_db(self):
         if self.engine is None:
             await self.connect()
         
-        async with self.engine.connect() as conn:
-            result = await conn.execute(
-                text(
-                    "SELECT EXISTS ("
-                    "SELECT FROM information_schema.tables "
-                    "WHERE table_schema = 'public' AND table_name = 'resources'"
-                    ")"
-                )
-            )
-            tables_exist = result.scalar()
-            
-            if tables_exist:
-                logger.debug("База данных уже содержит таблицы")
-                return
-        
-        async with self.engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-            logger.debug("Таблицы базы данных созданы успешно")
+        await self.run_migrations()
     
     async def close(self):
         if self.engine is not None:

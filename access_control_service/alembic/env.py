@@ -12,24 +12,31 @@ from alembic import context
 project_root = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(project_root))
 
-from user_service.config.settings import get_settings
-from user_service.db.base import Base
-from user_service.db.user import User
-from user_service.db.userpermission import UserPermission
+from access_control_service.config.settings import get_settings
+from access_control_service.db.base import Base
+from access_control_service.db.resource import Resource  # noqa: F401
+from access_control_service.db.access import Access, AccessResource  # noqa: F401
+from access_control_service.db.group import Group, GroupAccess  # noqa: F401
+from access_control_service.db.conflict import Conflict  # noqa: F401
+
 
 config = context.config
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-def get_url():
+
+def get_url() -> str:
     settings = get_settings()
     return settings.build_database_url()
 
+
 def get_metadata():
-    return Base.registry.metadata if hasattr(Base, 'registry') else Base.metadata
+    return Base.registry.metadata if hasattr(Base, "registry") else Base.metadata
+
 
 target_metadata = get_metadata()
+
 
 def run_migrations_offline() -> None:
     url = get_url()
@@ -59,7 +66,7 @@ def do_run_migrations(connection: Connection) -> None:
 async def run_migrations_online() -> None:
     configuration = config.get_section(config.config_ini_section)
     configuration["sqlalchemy.url"] = get_url()
-    
+
     connectable = create_async_engine(
         get_url(),
         poolclass=pool.NullPool,

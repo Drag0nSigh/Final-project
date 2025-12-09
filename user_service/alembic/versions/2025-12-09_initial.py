@@ -1,8 +1,8 @@
-"""Initial migration
+"""initial
 
-Revision ID: 042b21e2254e
+Revision ID: 548bb0e590d7
 Revises: 
-Create Date: 2025-12-08 16:17:43.031451
+Create Date: 2025-12-09 11:46:06.587030
 
 """
 from collections.abc import Sequence
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '042b21e2254e'
+revision: str = '548bb0e590d7'
 down_revision: str | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
@@ -35,12 +35,11 @@ def upgrade() -> None:
     sa.Column('permission_type', sa.String(length=20), nullable=False),
     sa.Column('item_id', sa.Integer(), nullable=False),
     sa.Column('item_name', sa.String(length=255), nullable=True),
-    sa.Column('status', sa.String(length=20), nullable=False, server_default='pending'),
+    sa.Column('status', sa.String(length=20), nullable=False),
     sa.Column('request_id', sa.String(length=36), nullable=False),
     sa.Column('assigned_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('request_id'),
     sa.UniqueConstraint('user_id', 'permission_type', 'item_id', name='unique_user_permission')
     )
     with op.batch_alter_table('user_permissions', schema=None) as batch_op:

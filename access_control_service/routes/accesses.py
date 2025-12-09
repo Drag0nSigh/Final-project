@@ -43,27 +43,23 @@ async def get_all_accesses(
     access_service: AccessServiceProtocol = Depends(get_access_service),
 ):
     accesses = await access_service.get_all_accesses()
-    
-    result = []
-    for access in accesses:
-        resources_out = [
-            ResourceModel(
-                id=res.id,
-                name=res.name,
-                type=res.type,
-                description=res.description,
-            )
-            for res in access.resources
-        ]
-        result.append(
-            AccessOut(
-                id=access.id,
-                name=access.name,
-                resources=resources_out,
-            )
+
+    return [
+        AccessOut(
+            id=access.id,
+            name=access.name,
+            resources=[
+                ResourceModel(
+                    id=res.id,
+                    name=res.name,
+                    type=res.type,
+                    description=res.description,
+                )
+                for res in access.resources
+            ],
         )
-    
-    return result
+        for access in accesses
+    ]
 
 
 @router.get("/{access_id}/groups", response_model=GetAccessGroupsResponse)

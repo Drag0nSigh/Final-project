@@ -14,12 +14,14 @@ from user_service.db.user import User  # noqa: F401
 from user_service.db.userpermission import UserPermission  # noqa: F401
 
 
+logger = logging.getLogger(__name__)
+
+
 class Database:
     
     def __init__(self):
-        self._logger = logging.getLogger(__name__)
         self.DB_HOST = os.getenv("DB_HOST", "postgres")
-        self.DB_PORT = "5432"
+        self.DB_PORT = os.getenv("DB_PORT", "5432")
         self.DB_USER = os.getenv("DB_USER", "postgres")
         self.DB_PASSWORD = os.getenv("DB_PASSWORD", "postgres")
         self.DB_NAME = os.getenv("DB_NAME", "user_service")
@@ -57,14 +59,14 @@ class Database:
             await temp_engine.dispose()
             return exists
         except Exception as e:
-            self._logger.debug(f"Ошибка проверки существования БД: {e}")
+            logger.debug(f"Ошибка проверки существования БД: {e}")
             return False
     
     async def _create_database(self):
         exists = await self._check_database_exists()
         
         if exists:
-            self._logger.debug(f"База данных '{self.DB_NAME}' уже существует")
+            logger.debug(f"База данных '{self.DB_NAME}' уже существует")
             return
         
         try:
@@ -78,16 +80,16 @@ class Database:
                 await conn.execute(
                     text(f'CREATE DATABASE "{self.DB_NAME}"')
                 )
-                self._logger.debug(f"Database '{self.DB_NAME}' created successfully")
+                logger.debug(f"Database '{self.DB_NAME}' created successfully")
             
             await temp_engine.dispose()
         except Exception as e:
-            self._logger.debug(f"Ошибка создания БД: {e}")
+            logger.debug(f"Ошибка создания БД: {e}")
             raise
     
     async def connect(self):
         if self.engine is not None:
-            self._logger.debug("База данных уже подключена")
+            logger.debug("База данных уже подключена")
             return
         
         await self._create_database()
@@ -106,7 +108,7 @@ class Database:
             autocommit=False,
         )
         
-        self._logger.debug(f"Подключено к базе данных '{self.DB_NAME}'")
+        logger.debug(f"Подключено к базе данных '{self.DB_NAME}'")
     
     async def run_migrations(self):
         if self.engine is None:
@@ -116,26 +118,22 @@ class Database:
         if not alembic_ini_path.exists():
             raise FileNotFoundError(f"Alembic config file not found: {alembic_ini_path}")
         
-        alembic_dir = alembic_ini_path.parent
-        original_cwd = os.getcwd()
-        
-        try:
-            os.chdir(str(alembic_dir))
-            alembic_cfg = Config(str(alembic_ini_path))
-            
-            alembic_cfg.set_main_option("sqlalchemy.url", self.DATABASE_URL)
+        alembic_cfg = Config(str(alembic_ini_path))
+        alembic_cfg.set_main_option(
+            "script_location",
+            str(alembic_ini_path.parent / "alembic"),
+        )
+        alembic_cfg.set_main_option("sqlalchemy.url", self.DATABASE_URL)
 
+        try:
             loop = asyncio.get_running_loop()
             await loop.run_in_executor(None, command.upgrade, alembic_cfg, "head")
-            
-            self._logger.debug("Миграции Alembic применены успешно")
+            logger.debug("Миграции Alembic применены успешно")
         except Exception as e:
-            self._logger.debug(f"Ошибка при применении миграций Alembic: {e}")
+            logger.debug(f"Ошибка при применении миграций Alembic: {e}")
             import traceback
             traceback.print_exc()
             raise
-        finally:
-            os.chdir(original_cwd)
     
     async def init_db(self):
         if self.engine is None:
@@ -148,7 +146,7 @@ class Database:
             await self.engine.dispose()
             self.engine = None
             self.AsyncSessionLocal = None
-            self._logger.debug(f"Отключено от базы данных '{self.DB_NAME}'")
+            logger.debug(f"Отключено от базы данных '{self.DB_NAME}'")
 
 
 db = Database()
