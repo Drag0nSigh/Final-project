@@ -65,90 +65,133 @@ class ResultConsumer:
 
     async def _handle_message(self, message: aio_pika.IncomingMessage) -> None:
 
-        async with message.process():
+        async with message.process(ignore_processed=True):
+            result_data: dict | None = None
             try:
-                try:
-                    body = message.body.decode("utf-8")
-                    result_data = json.loads(body)
-                except (json.JSONDecodeError, UnicodeDecodeError) as exc:
-                    logger.error(
-                        f"Ошибка парсинга сообщения из result_queue: {exc}, "
-                        f"body: {message.body.decode('utf-8', errors='ignore')}"
-                    )
-                    await message.nack(requeue=False)
+                result_data = await self._parse_message_or_nack(message)
+                if result_data is None:
                     return
 
-                request_id = result_data.get("request_id")
-                approved = result_data.get("approved")
-                user_id = result_data.get("user_id")
-                permission_type_str = result_data.get("permission_type")
-                item_id = result_data.get("item_id")
-
-                if not all([request_id, approved is not None, user_id, permission_type_str, item_id]):
-                    logger.error(
-                        f"Неполные данные в сообщении result_queue: request_id={request_id}, "
-                        f"approved={approved}, user_id={user_id}, permission_type={permission_type_str}, item_id={item_id}"
-                    )
-                    await message.nack(requeue=False)
+                payload = await self._extract_payload_or_nack(message, result_data)
+                if payload is None:
                     return
 
-                try:
-                    permission_type = PermissionType(permission_type_str)
-                except ValueError:
-                    logger.error(
-                        f"Некорректный permission_type в сообщении: {permission_type_str}"
-                    )
-                    await message.nack(requeue=False)
+                request_id, approved, user_id, permission_type_str, item_id = payload
+
+                permission_type = await self._parse_permission_type_or_nack(
+                    message, permission_type_str
+                )
+                if permission_type is None:
                     return
 
-                logger.debug(
-                    f"Получен результат валидации: request_id={request_id}, approved={approved}, "
-                    f"user_id={user_id}, permission_type={permission_type.value}, item_id={item_id}"
+                await self._apply_result(
+                    message,
+                    request_id,
+                    approved,
+                    user_id,
+                    permission_type,
+                    item_id,
                 )
 
-                if self._db.AsyncSessionLocal is None:
-                    logger.error("БД не инициализирована, невозможно обработать сообщение")
-                    await message.nack(requeue=True)
-                    return
+                await message.ack()
 
-                async with self._service_factory.create_with_session() as service:
-                    permission = await service.apply_validation_result(
-                        request_id=request_id,
-                        approved=approved,
-                        user_id=user_id,
-                        permission_type=permission_type,
-                        item_id=item_id,
-                    )
-
-                    if permission is None:
-                        logger.warning(
-                            f"Заявка не найдена в БД: request_id={request_id}, user_id={user_id}, "
-                            f"permission_type={permission_type}, item_id={item_id}. Возможно, заявка была удалена "
-                            f"или request_id некорректен."
-                        )
-                    else:
-                        if approved:
-                            logger.debug(
-                                f"Заявка одобрена и активирована: request_id={request_id}, user_id={user_id}, "
-                                f"permission_type={permission_type}, item_id={item_id}, новый статус={permission.status}"
-                            )
-                        else:
-                            logger.debug(
-                                f"Заявка отклонена: request_id={request_id}, user_id={user_id}, "
-                                f"permission_type={permission_type}, item_id={item_id}, новый статус={permission.status}"
-                            )
-
-            except RuntimeError as exc:
-                if "БД не инициализирована" in str(exc):
-                    logger.error("БД не инициализирована, невозможно обработать сообщение")
-                    await message.nack(requeue=True)
-                    return
-                raise
-            except Exception as exc:
-                request_id_value = result_data.get("request_id") if "result_data" in locals() else "unknown"
+            except Exception:
+                request_id_value = (
+                    result_data.get("request_id") if result_data is not None else "unknown"
+                )
                 logger.exception(
                     f"Ошибка обработки сообщения из result_queue: request_id={request_id_value}"
                 )
                 await message.nack(requeue=False)
                 raise
+
+    async def _parse_message_or_nack(
+        self, message: aio_pika.IncomingMessage
+    ) -> dict | None:
+        try:
+            body = message.body.decode("utf-8")
+            return json.loads(body)
+        except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+            logger.error(
+                f"Ошибка парсинга сообщения из result_queue: {exc}, "
+                f"body: {message.body.decode('utf-8', errors='ignore')}"
+            )
+            await message.nack(requeue=False)
+            return None
+
+    async def _extract_payload_or_nack(
+        self, message: aio_pika.IncomingMessage, data: dict
+    ) -> tuple[str, bool, int, str, int] | None:
+        request_id = data.get("request_id")
+        approved = data.get("approved")
+        user_id = data.get("user_id")
+        permission_type_str = data.get("permission_type")
+        item_id = data.get("item_id")
+
+        if not all([request_id, approved is not None, user_id, permission_type_str, item_id]):
+            logger.error(
+                f"Неполные данные в сообщении result_queue: request_id={request_id}, "
+                f"approved={approved}, user_id={user_id}, permission_type={permission_type_str}, item_id={item_id}"
+            )
+            await message.nack(requeue=False)
+            return None
+
+        return (
+            str(request_id),
+            bool(approved),
+            int(user_id),
+            str(permission_type_str),
+            int(item_id),
+        )
+
+    async def _parse_permission_type_or_nack(
+        self, message: aio_pika.IncomingMessage, permission_type_str: str
+    ) -> PermissionType | None:
+        try:
+            return PermissionType(permission_type_str)
+        except ValueError:
+            logger.error(f"Некорректный permission_type в сообщении: {permission_type_str}")
+            await message.nack(requeue=False)
+            return None
+
+    async def _apply_result(
+        self,
+        message: aio_pika.IncomingMessage,
+        request_id: str,
+        approved: bool,
+        user_id: int,
+        permission_type: PermissionType,
+        item_id: int,
+    ) -> None:
+        if self._db.AsyncSessionLocal is None:
+            logger.error("БД не инициализирована, невозможно обработать сообщение")
+            await message.nack(requeue=True)
+            return
+
+        async with self._service_factory.create_with_session() as service:
+            permission = await service.apply_validation_result(
+                request_id=request_id,
+                approved=approved,
+                user_id=user_id,
+                permission_type=permission_type,
+                item_id=item_id,
+            )
+
+            if permission is None:
+                logger.warning(
+                    f"Заявка не найдена в БД: request_id={request_id}, user_id={user_id}, "
+                    f"permission_type={permission_type}, item_id={item_id}. Возможно, заявка была удалена "
+                    f"или request_id некорректен."
+                )
+            else:
+                if approved:
+                    logger.debug(
+                        f"Заявка одобрена и активирована: request_id={request_id}, user_id={user_id}, "
+                        f"permission_type={permission_type}, item_id={item_id}, новый статус={permission.status}"
+                    )
+                else:
+                    logger.debug(
+                        f"Заявка отклонена: request_id={request_id}, user_id={user_id}, "
+                        f"permission_type={permission_type}, item_id={item_id}, новый статус={permission.status}"
+                    )
 
