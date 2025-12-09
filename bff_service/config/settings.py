@@ -5,7 +5,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Конфигурационные параметры BFF Service."""
 
     user_service_url: AnyUrl = Field(
         default="http://user-service:8000",
@@ -36,6 +35,5 @@ class Settings(BaseSettings):
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
-    """Возвращает singleton-экземпляр настроек."""
     return Settings()
 

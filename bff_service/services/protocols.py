@@ -12,22 +12,17 @@ from bff_service.models.models import (
 
 
 class HTTPClientProtocol(Protocol):
-    """Протокол для HTTP клиента."""
 
     async def get(self, url: str, **kwargs: Any) -> Any:
-        """Выполнить GET запрос."""
         ...
 
     async def post(self, url: str, **kwargs: Any) -> Any:
-        """Выполнить POST запрос."""
         ...
 
     async def request(self, method: str, url: str, **kwargs: Any) -> Any:
-        """Выполнить HTTP запрос с указанным методом."""
         ...
 
     async def aclose(self) -> None:
-        """Закрыть HTTP клиент."""
         ...
 
 

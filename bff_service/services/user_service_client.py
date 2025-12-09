@@ -8,7 +8,6 @@ logger = logging.getLogger(__name__)
 
 
 class UserServiceClient:
-    """HTTP клиент для взаимодействия с User Service."""
 
     def __init__(
         self,
@@ -27,7 +26,6 @@ class UserServiceClient:
     async def request_access(
         self, user_id: int, permission_type: str, item_id: int
     ) -> RequestAccessResponse:
-        """Создание заявки на получение доступа или группы прав."""
 
         url = "/request"
         payload = {
@@ -47,7 +45,6 @@ class UserServiceClient:
     async def revoke_permission(
         self, user_id: int, permission_type: str, item_id: int
     ) -> RevokePermissionResponse:
-        """Отзыв права у пользователя."""
 
         url = f"/users/{user_id}/permissions"
         payload = {
@@ -64,7 +61,6 @@ class UserServiceClient:
         return RevokePermissionResponse.model_validate(result)
 
     async def get_user_permissions(self, user_id: int) -> GetUserPermissionsResponse:
-        """Получение всех прав пользователя."""
         
         url = f"/users/{user_id}/permissions"
 
@@ -77,6 +73,5 @@ class UserServiceClient:
         return GetUserPermissionsResponse.model_validate(result)
 
     async def close(self):
-        """Закрыть HTTP клиент."""
         await self.client.aclose()
 
