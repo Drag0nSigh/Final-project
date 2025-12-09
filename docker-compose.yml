@@ -4,7 +4,7 @@ services:
     image: redis:7-alpine
     container_name: access_control_redis
     ports:
-      - "6379:6379"
+      - "${REDIS_EXTERNAL_PORT:-6379}:6379"
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
@@ -19,10 +19,10 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
-    container_name: access_control_rabbitmq
+    container_name: user_service_rabbitmq
     ports:
-      - "5672:5672"   # AMQP порт
-      - "15672:15672" # Management UI
+      - "${RABBITMQ_PORT:-5672}:5672"       # AMQP порт
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672" # Management UI
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
@@ -47,7 +47,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5433:5432"
+      - "${POSTGRES_USER_EXTERNAL_PORT:-5433}:5432"
     volumes:
       - postgres_user_data:/var/lib/postgresql/data
     healthcheck:
@@ -66,7 +66,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5434:5432"
+      - "${POSTGRES_ACCESS_EXTERNAL_PORT:-5434}:5432"
     volumes:
       - postgres_access_data:/var/lib/postgresql/data
     healthcheck:
@@ -84,24 +84,25 @@ services:
       dockerfile: Dockerfile
     container_name: user_service
     environment:
-      DB_HOST: postgres_user
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_NAME: user_service
-      
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
-      RABBITMQ_USER: guest
-      RABBITMQ_PASSWORD: guest
-      
+      DB_HOST: ${USER_SERVICE_DB_HOST}
+      DB_PORT: ${USER_SERVICE_DB_PORT}
+      DB_USER: ${USER_SERVICE_DB_USER}
+      DB_PASSWORD: ${USER_SERVICE_DB_PASSWORD}
+      DB_NAME: ${USER_SERVICE_DB_NAME}
+
+      REDIS_HOST: ${USER_SERVICE_REDIS_HOST}
+      REDIS_PORT: ${USER_SERVICE_REDIS_PORT}
+
+      RABBITMQ_HOST: ${USER_SERVICE_RABBITMQ_HOST}
+      RABBITMQ_PORT: ${USER_SERVICE_RABBITMQ_PORT}
+      RABBITMQ_USER: ${USER_SERVICE_RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${USER_SERVICE_RABBITMQ_PASSWORD}
+      RABBITMQ_VHOST: ${RABBITMQ_VHOST}
+
       SERVICE_NAME: user_service
-      LOG_LEVEL: DEBUG
+      LOG_LEVEL: ${USER_SERVICE_LOG_LEVEL}
     ports:
-      - "8001:8000"
+      - "${USER_SERVICE_EXTERNAL_PORT:-8001}:${USER_SERVICE_INTERNAL_PORT:-8000}"
     depends_on:
       postgres_user:
         condition: service_healthy
@@ -121,19 +122,19 @@ services:
       dockerfile: Dockerfile
     container_name: access_control_service
     environment:
-      DB_HOST: postgres_access
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_NAME: access_control_service
-      
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      
+      DB_HOST: ${ACCESS_CONTROL_SERVICE_DB_HOST}
+      DB_PORT: ${ACCESS_CONTROL_SERVICE_DB_PORT}
+      DB_USER: ${ACCESS_CONTROL_SERVICE_DB_USER}
+      DB_PASSWORD: ${ACCESS_CONTROL_SERVICE_DB_PASSWORD}
+      DB_NAME: ${ACCESS_CONTROL_SERVICE_DB_NAME}
+
+      REDIS_HOST: ${ACCESS_CONTROL_SERVICE_REDIS_HOST}
+      REDIS_PORT: ${ACCESS_CONTROL_SERVICE_REDIS_PORT}
+
       SERVICE_NAME: access_control_service
-      ACCESS_CONTROL_SERVICE_LOG_LEVEL: DEBUG
+      LOG_LEVEL: ${ACCESS_CONTROL_SERVICE_LOG_LEVEL}
     ports:
-      - "8002:8000"
+      - "${ACCESS_CONTROL_SERVICE_EXTERNAL_PORT:-8002}:${ACCESS_CONTROL_SERVICE_INTERNAL_PORT:-8000}"
     depends_on:
       postgres_access:
         condition: service_healthy
@@ -151,24 +152,24 @@ services:
       dockerfile: Dockerfile
     container_name: validation_service
     environment:
-      USER_SERVICE_URL: http://user_service:8000
-      ACCESS_CONTROL_SERVICE_URL: http://access_control_service:8000
-      
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
-      RABBITMQ_USER: guest
-      RABBITMQ_PASSWORD: guest
-      RABBITMQ_VHOST: /
+      USER_SERVICE_URL: ${VALIDATION_SERVICE_USER_SERVICE_URL}
+      ACCESS_CONTROL_SERVICE_URL: ${VALIDATION_SERVICE_ACCESS_CONTROL_SERVICE_URL}
+
+      RABBITMQ_HOST: ${VALIDATION_SERVICE_RABBITMQ_HOST}
+      RABBITMQ_PORT: ${VALIDATION_SERVICE_RABBITMQ_PORT}
+      RABBITMQ_USER: ${VALIDATION_SERVICE_RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${VALIDATION_SERVICE_RABBITMQ_PASSWORD}
+      RABBITMQ_VHOST: ${RABBITMQ_VHOST}
       VALIDATION_QUEUE: validation_queue
       RESULT_QUEUE: result_queue
-      
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      
+
+      REDIS_HOST: ${VALIDATION_SERVICE_REDIS_HOST}
+      REDIS_PORT: ${VALIDATION_SERVICE_REDIS_PORT}
+
       HTTP_TIMEOUT: 30.0
-      LOG_LEVEL: DEBUG
+      LOG_LEVEL: ${VALIDATION_SERVICE_LOG_LEVEL}
     ports:
-      - "8003:8000"
+      - "${VALIDATION_SERVICE_EXTERNAL_PORT:-8003}:${VALIDATION_SERVICE_INTERNAL_PORT:-8000}"
     depends_on:
       user_service:
         condition: service_started
@@ -190,12 +191,12 @@ services:
       dockerfile: Dockerfile
     container_name: bff_service
     environment:
-      BFF_SERVICE_USER_SERVICE_URL: http://user_service:8000
-      BFF_SERVICE_ACCESS_CONTROL_SERVICE_URL: http://access_control_service:8000
-      BFF_SERVICE_HTTP_TIMEOUT: 30.0
-      BFF_SERVICE_LOG_LEVEL: DEBUG
+      USER_SERVICE_URL: ${BFF_SERVICE_USER_SERVICE_URL}
+      ACCESS_CONTROL_SERVICE_URL: ${BFF_SERVICE_ACCESS_CONTROL_SERVICE_URL}
+      HTTP_TIMEOUT: 30.0
+      LOG_LEVEL: ${BFF_SERVICE_LOG_LEVEL}
     ports:
-      - "8000:8000"
+      - "${BFF_SERVICE_EXTERNAL_PORT:-8000}:${BFF_SERVICE_INTERNAL_PORT:-8000}"
     depends_on:
       user_service:
         condition: service_started

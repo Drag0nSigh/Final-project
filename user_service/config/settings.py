@@ -1,6 +1,4 @@
 from functools import lru_cache
-from typing import Final
-import os
 
 from pydantic import AnyUrl, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -91,7 +89,7 @@ class Settings(BaseSettings):
     )
 
     model_config = SettingsConfigDict(
-        env_prefix="USER_SERVICE_",
+        env_prefix="",
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
@@ -132,13 +130,6 @@ class Settings(BaseSettings):
         )
 
 
-ENV_FILE_ENV_VAR: Final[str] = "USER_SERVICE_ENV_FILE"
-
-
 @lru_cache(maxsize=1)
-def get_settings(env_file: str | None = None) -> Settings:
-
-    if env_file is None:
-        env_file = os.getenv(ENV_FILE_ENV_VAR)
-
-    return Settings(_env_file=env_file)
+def get_settings() -> Settings:
+    return Settings()

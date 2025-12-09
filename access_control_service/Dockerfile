@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.12
 
 WORKDIR /app
 
@@ -19,4 +19,3 @@ ENV PYTHONUNBUFFERED=1
 EXPOSE 8000
 
 CMD ["python", "-m", "uvicorn", "access_control_service.main:app", "--host", "0.0.0.0", "--port", "8000"]
-
