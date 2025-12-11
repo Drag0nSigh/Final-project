@@ -6,20 +6,20 @@ from user_service.models.enums import PermissionType, PermissionStatus
 
 class User(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    id: int
-    username: str
+    id: int = Field(description="ID пользователя")
+    username: str = Field(description="Имя пользователя")
 
 
 class UserPermission(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    id: int
-    user_id: int
-    permission_type: PermissionType
-    item_id: int
-    item_name: str | None = None
-    status: PermissionStatus
-    request_id: str 
-    assigned_at: datetime | None = None
+    id: int = Field(description="ID записи права пользователя")
+    user_id: int = Field(description="ID пользователя")
+    permission_type: PermissionType = Field(description="Тип права")
+    item_id: int = Field(description="ID доступа или группы")
+    item_name: str | None = Field(default=None, description="Название доступа или группы")
+    status: PermissionStatus = Field(description="Статус права пользователя")
+    request_id: str = Field(description="UUID заявки/запроса, породившего право")
+    assigned_at: datetime | None = Field(default=None, description="Когда право назначено")
 
 
 class RequestAccessRequest(BaseModel):
@@ -47,30 +47,27 @@ class RevokePermissionResponse(BaseModel):
 
 
 class PermissionResponse(BaseModel):
-
-    id: int
-    permission_type: PermissionType
-    item_id: int
-    item_name: str | None = None
-    status: str
-    assigned_at: datetime | None = None
+    id: int = Field(description="ID права")
+    permission_type: PermissionType = Field(description="Тип права")
+    item_id: int = Field(description="ID ресурса/группы")
+    item_name: str | None = Field(default=None, description="Название ресурса/группы")
+    status: str = Field(description="Статус права")
+    assigned_at: datetime | None = Field(default=None, description="Когда право назначено")
 
 
 class GetUserPermissionsResponse(BaseModel):
-
-    user_id: int
-    groups: list[PermissionResponse] = Field(default_factory=list)
-    accesses: list[PermissionResponse] = Field(default_factory=list)
+    user_id: int = Field(description="ID пользователя")
+    groups: list[PermissionResponse] = Field(default_factory=list, description="Права по группам")
+    accesses: list[PermissionResponse] = Field(default_factory=list, description="Права по доступам")
 
 
 class ActiveGroup(BaseModel):
-    id: int
-    name: str | None = None
+    id: int = Field(description="ID группы")
+    name: str | None = Field(default=None, description="Название группы")
 
 
 class GetActiveGroupsResponse(BaseModel):
-    
-    groups: list[ActiveGroup] = Field(default_factory=list)
+    groups: list[ActiveGroup] = Field(default_factory=list, description="Список активных групп")
 
 
 class CreateUserRequest(BaseModel):
@@ -78,8 +75,8 @@ class CreateUserRequest(BaseModel):
 
 
 class CreateUserResponse(BaseModel):
-    id: int
-    username: str
+    id: int = Field(description="ID созданного пользователя")
+    username: str = Field(description="Имя созданного пользователя")
 
 
 class CreateUserPermissionRequest(BaseModel):
@@ -92,14 +89,14 @@ class CreateUserPermissionRequest(BaseModel):
 
 
 class CreateUserPermissionResponse(BaseModel):
-    id: int
-    user_id: int
-    permission_type: str
-    item_id: int
-    item_name: str | None = None
-    status: str
-    request_id: str
-    assigned_at: datetime | None = None
+    id: int = Field(description="ID созданного права")
+    user_id: int = Field(description="ID пользователя")
+    permission_type: str = Field(description="Тип права")
+    item_id: int = Field(description="ID доступа или группы")
+    item_name: str | None = Field(default=None, description="Название доступа или группы")
+    status: str = Field(description="Статус права")
+    request_id: str = Field(description="UUID заявки")
+    assigned_at: datetime | None = Field(default=None, description="Когда право назначено")
 
 
 class UpdatePermissionStatusRequest(BaseModel):
@@ -108,6 +105,6 @@ class UpdatePermissionStatusRequest(BaseModel):
 
 
 class UpdatePermissionStatusResponse(BaseModel):
-    request_id: str
-    status: str
+    request_id: str = Field(description="UUID заявки")
+    status: str = Field(description="Итоговый статус заявки")
     message: str = Field(description="Сообщение о результате операции")

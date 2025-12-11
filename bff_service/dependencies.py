@@ -18,7 +18,7 @@ def get_settings_dependency() -> Settings:
 
 @lru_cache(maxsize=1)
 def get_user_service_client() -> UserServiceClientProtocol:
-    settings = get_settings()
+    settings = get_settings_dependency()
     return UserServiceClient(
         base_url=str(settings.user_service_url), timeout=settings.http_timeout
     )
@@ -26,7 +26,7 @@ def get_user_service_client() -> UserServiceClientProtocol:
 
 @lru_cache(maxsize=1)
 def get_access_control_client() -> AccessControlClientProtocol:
-    settings = get_settings()
+    settings = get_settings_dependency()
     return AccessControlClient(
         base_url=str(settings.access_control_service_url), timeout=settings.http_timeout
     )
@@ -37,9 +37,8 @@ async def close_all_clients():
         user_client = get_user_service_client()
         await user_client.close()
         get_user_service_client.cache_clear()
-    
+
     if get_access_control_client.cache_info().currsize > 0:
         access_client = get_access_control_client()
         await access_client.close()
         get_access_control_client.cache_clear()
-

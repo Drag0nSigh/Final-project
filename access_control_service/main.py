@@ -5,10 +5,13 @@ import logging
 import sys
 
 from access_control_service.routes import resources, accesses, groups, conflicts, health, admin
-from access_control_service.dependencies import get_database, get_redis_client
-from access_control_service.config.settings import get_settings
+from access_control_service.dependencies import (
+    get_database,
+    get_redis_client,
+    get_settings_dependency,
+)
 
-settings = get_settings()
+settings = get_settings_dependency()
 log_level = getattr(logging, settings.log_level.upper(), logging.INFO)
 logging.basicConfig(
     level=log_level,

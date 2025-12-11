@@ -103,4 +103,3 @@ class AccessControlClientProtocol(Protocol):
 
     async def close(self) -> None:
         ...
-

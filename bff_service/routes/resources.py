@@ -5,7 +5,6 @@ from fastapi import APIRouter, Depends
 from bff_service.models.models import Resource
 from bff_service.services.protocols import AccessControlClientProtocol
 from bff_service.dependencies import get_access_control_client
-from bff_service.utils.error_handlers import handle_service_errors
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +12,6 @@ router = APIRouter()
 
 
 @router.get("", response_model=list[Resource])
-@handle_service_errors("Access Control Service")
 async def get_all_resources(
     access_control_client: AccessControlClientProtocol = Depends(get_access_control_client),
 ) -> list[Resource]:
@@ -25,7 +23,6 @@ async def get_all_resources(
 
 
 @router.get("/{resource_id}", response_model=Resource)
-@handle_service_errors("Access Control Service")
 async def get_resource(
     resource_id: int,
     access_control_client: AccessControlClientProtocol = Depends(get_access_control_client),

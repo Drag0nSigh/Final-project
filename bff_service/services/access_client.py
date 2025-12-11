@@ -17,4 +17,3 @@ class AccessClient(BaseHTTPClient[Access]):
 
     async def get_by_id(self, access_id: int) -> Access:
         return await self._get_one(access_id, Access)
-

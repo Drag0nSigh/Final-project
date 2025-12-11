@@ -7,12 +7,16 @@ import logging
 import sys
 
 from user_service.routes import permissions, health, admin
-from user_service.dependencies import get_database, get_redis_client, get_rabbitmq_manager
+from user_service.dependencies import (
+    get_database,
+    get_redis_client,
+    get_rabbitmq_manager,
+    get_settings_dependency,
+)
 from user_service.services.result_consumer import ResultConsumer
 from user_service.services.permission_service_factory import PermissionServiceFactory
-from user_service.config.settings import get_settings
 
-settings = get_settings()
+settings = get_settings_dependency()
 log_level = getattr(logging, settings.log_level.upper(), logging.INFO)
 logging.basicConfig(
     level=log_level,

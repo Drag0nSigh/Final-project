@@ -32,4 +32,3 @@ class BaseHTTPClient(Generic[T]):
         response.raise_for_status()
         result = response.json()
         return model_class.model_validate(result)
-

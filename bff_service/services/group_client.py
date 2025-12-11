@@ -17,4 +17,3 @@ class GroupClient(BaseHTTPClient[Group]):
 
     async def get_by_id(self, group_id: int) -> Group:
         return await self._get_one(group_id, Group)
-

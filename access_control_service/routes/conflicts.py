@@ -1,6 +1,5 @@
-import logging
 import redis.asyncio as redis
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 
 from access_control_service.dependencies import (
     get_redis_connection,
@@ -13,7 +12,6 @@ from access_control_service.services.cache import (
     set_conflicts_matrix_cache
 )
 
-logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -22,24 +20,18 @@ async def get_all_conflicts(
     redis_conn: redis.Redis = Depends(get_redis_connection),
     conflict_service: ConflictServiceProtocol = Depends(get_conflict_service),
 ):
-    try:
-        cached_conflicts = await get_conflicts_matrix_from_cache(redis_conn)
-        if cached_conflicts is not None:
-            conflicts = [
-                Conflict.model_validate(conflict_dict)
-                for conflict_dict in cached_conflicts
-            ]
-            return GetConflictsResponse(conflicts=conflicts)
-        
-        conflicts_list = await conflict_service.get_all_conflicts()
-        
-        conflicts_dict = [conflict.model_dump() for conflict in conflicts_list]
-        await set_conflicts_matrix_cache(redis_conn, conflicts_dict)
-        
-        return GetConflictsResponse(conflicts=conflicts_list)
-    except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Ошибка при получении конфликтов: {str(exc)}"
-        )
+    cached_conflicts = await get_conflicts_matrix_from_cache(redis_conn)
+    if cached_conflicts is not None:
+        conflicts = [
+            Conflict.model_validate(conflict_dict)
+            for conflict_dict in cached_conflicts
+        ]
+        return GetConflictsResponse(conflicts=conflicts)
+    
+    conflicts_list = await conflict_service.get_all_conflicts()
+    
+    conflicts_dict = [conflict.model_dump() for conflict in conflicts_list]
+    await set_conflicts_matrix_cache(redis_conn, conflicts_dict)
+    
+    return GetConflictsResponse(conflicts=conflicts_list)
 

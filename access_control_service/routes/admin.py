@@ -174,7 +174,7 @@ async def create_conflict(
     redis_conn: redis.Redis = Depends(get_redis_connection),
     conflict_service_admin: ConflictServiceAdminProtocol = Depends(get_conflict_service_admin),
 ):
-    """Создание конфликта между группами (служебный эндпоинт).
+    """Создание конфликта между группами.
     
     Автоматически создает симметричную пару (group1,group2) и (group2,group1)
     """

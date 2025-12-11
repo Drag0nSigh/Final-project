@@ -17,4 +17,3 @@ class ResourceClient(BaseHTTPClient[Resource]):
 
     async def get_by_id(self, resource_id: int) -> Resource:
         return await self._get_one(resource_id, Resource)
-

@@ -61,7 +61,7 @@ class UserServiceClient:
         return RevokePermissionResponse.model_validate(result)
 
     async def get_user_permissions(self, user_id: int) -> GetUserPermissionsResponse:
-        
+
         url = f"/users/{user_id}/permissions"
 
         logger.debug(f"Отправка запроса в User Service: GET {url}")
@@ -74,4 +74,3 @@ class UserServiceClient:
 
     async def close(self):
         await self.client.aclose()
-

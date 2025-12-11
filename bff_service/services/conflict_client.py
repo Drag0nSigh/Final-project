@@ -19,4 +19,3 @@ class ConflictClient(BaseHTTPClient[GetConflictsResponse]):
         response.raise_for_status()
         result = response.json()
         return GetConflictsResponse.model_validate(result)
-
