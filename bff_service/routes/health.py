@@ -18,8 +18,7 @@ async def readiness_check():
 
     return {
         "status": "ready",
-        "user_service": "ok",  
+        "user_service": "ok",
         "access_control_service": "ok",
-        "rabbitmq": "ok" 
+        "rabbitmq": "ok"
     }
-

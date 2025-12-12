@@ -4,7 +4,6 @@ import json
 import logging
 
 import aio_pika
-from aio_pika.abc import AbstractQueue
 
 from user_service.db.protocols import (
     RabbitMQManagerProtocol,
@@ -52,7 +51,7 @@ class ResultConsumer:
                         await self._handle_message(message)
                     except Exception:
                         logger.exception("Ошибка при обработке сообщения, продолжаем обработку следующих сообщений")
-        except Exception as exc:
+        except Exception:
             logger.exception("Критическая ошибка в цикле потребления сообщений")
             raise
         finally:

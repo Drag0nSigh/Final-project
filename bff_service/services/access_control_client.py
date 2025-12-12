@@ -26,55 +26,55 @@ class AccessControlClient:
         group_client: GroupClientProtocol | None = None,
         conflict_client: ConflictClientProtocol | None = None,
     ):
-        self.base_url = base_url.rstrip("/")
-        self.timeout = timeout
-        self.client: HTTPClientProtocol = (
+        self._base_url = base_url.rstrip("/")
+        self._timeout = timeout
+        self._client: HTTPClientProtocol = (
             http_client
             if http_client is not None
-            else httpx.AsyncClient(base_url=self.base_url, timeout=self.timeout)
+            else httpx.AsyncClient(base_url=self._base_url, timeout=self._timeout)
         )
 
-        self.resources: ResourceClientProtocol = (
+        self._resources: ResourceClientProtocol = (
             resource_client
             if resource_client is not None
-            else ResourceClient(self.base_url, self.client)
+            else ResourceClient(self._base_url, self._client)
         )
-        self.accesses: AccessClientProtocol = (
+        self._accesses: AccessClientProtocol = (
             access_client
             if access_client is not None
-            else AccessClient(self.base_url, self.client)
+            else AccessClient(self._base_url, self._client)
         )
-        self.groups: GroupClientProtocol = (
+        self._groups: GroupClientProtocol = (
             group_client
             if group_client is not None
-            else GroupClient(self.base_url, self.client)
+            else GroupClient(self._base_url, self._client)
         )
-        self.conflicts: ConflictClientProtocol = (
+        self._conflicts: ConflictClientProtocol = (
             conflict_client
             if conflict_client is not None
-            else ConflictClient(self.base_url, self.client)
+            else ConflictClient(self._base_url, self._client)
         )
 
     async def get_all_resources(self) -> list[Resource]:
-        return await self.resources.get_all()
+        return await self._resources.get_all()
 
     async def get_resource(self, resource_id: int) -> Resource:
-        return await self.resources.get_by_id(resource_id)
+        return await self._resources.get_by_id(resource_id)
 
     async def get_all_accesses(self) -> list[Access]:
-        return await self.accesses.get_all()
+        return await self._accesses.get_all()
 
     async def get_access(self, access_id: int) -> Access:
-        return await self.accesses.get_by_id(access_id)
+        return await self._accesses.get_by_id(access_id)
 
     async def get_all_groups(self) -> list[Group]:
-        return await self.groups.get_all()
+        return await self._groups.get_all()
 
     async def get_group(self, group_id: int) -> Group:
-        return await self.groups.get_by_id(group_id)
+        return await self._groups.get_by_id(group_id)
 
     async def get_conflicts(self) -> GetConflictsResponse:
-        return await self.conflicts.get_all()
+        return await self._conflicts.get_all()
 
     async def close(self):
-        await self.client.aclose()
+        await self._client.aclose()

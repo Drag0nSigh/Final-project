@@ -15,12 +15,12 @@ class UserServiceClient:
         timeout: float = 30.0,
         http_client: HTTPClientProtocol | None = None,
     ):
-        self.base_url = base_url.rstrip("/")
-        self.timeout = timeout
-        self.client: HTTPClientProtocol = (
+        self._base_url = base_url.rstrip("/")
+        self._timeout = timeout
+        self._client: HTTPClientProtocol = (
             http_client
             if http_client is not None
-            else httpx.AsyncClient(base_url=self.base_url, timeout=self.timeout)
+            else httpx.AsyncClient(base_url=self._base_url, timeout=self._timeout)
         )
 
     async def request_access(
@@ -36,7 +36,7 @@ class UserServiceClient:
 
         logger.debug(f"Отправка запроса в User Service: POST {url} с данными {payload}")
 
-        response = await self.client.post(url, json=payload)
+        response = await self._client.post(url, json=payload)
         response.raise_for_status()
         result = response.json()
         logger.debug(f"Получен ответ от User Service: {result}")
@@ -54,7 +54,7 @@ class UserServiceClient:
 
         logger.debug(f"Отправка запроса в User Service: DELETE {url} с данными {payload}")
 
-        response = await self.client.request("DELETE", url, json=payload)
+        response = await self._client.request("DELETE", url, json=payload)
         response.raise_for_status()
         result = response.json()
         logger.debug(f"Получен ответ от User Service: {result}")
@@ -66,11 +66,11 @@ class UserServiceClient:
 
         logger.debug(f"Отправка запроса в User Service: GET {url}")
 
-        response = await self.client.get(url)
+        response = await self._client.get(url)
         response.raise_for_status()
         result = response.json()
         logger.debug(f"Получен ответ от User Service: {result}")
         return GetUserPermissionsResponse.model_validate(result)
 
     async def close(self):
-        await self.client.aclose()
+        await self._client.aclose()

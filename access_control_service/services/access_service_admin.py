@@ -15,8 +15,8 @@ class AccessServiceAdmin:
         access_repository: AccessRepositoryProtocol,
         resource_repository: ResourceRepositoryProtocol,
     ):
-        self.access_repository = access_repository
-        self.resource_repository = resource_repository
+        self._access_repository = access_repository
+        self._resource_repository = resource_repository
 
     async def add_resource_to_access(
         self, access_id: int, resource_id: int
@@ -26,11 +26,11 @@ class AccessServiceAdmin:
             f"Добавление ресурса к доступу: access_id={access_id}, resource_id={resource_id}"
         )
 
-        access = await self.access_repository.find_by_id_with_resources(access_id)
+        access = await self._access_repository.find_by_id_with_resources(access_id)
         if access is None:
             raise ValueError(f"Доступ с ID {access_id} не найден")
 
-        resource = await self.resource_repository.find_by_id(resource_id)
+        resource = await self._resource_repository.find_by_id(resource_id)
         if resource is None:
             raise ValueError(f"Ресурс с ID {resource_id} не найден")
 
@@ -40,7 +40,7 @@ class AccessServiceAdmin:
             )
 
         access.resources.append(resource)
-        await self.access_repository.flush()
+        await self._access_repository.flush()
 
 
     async def remove_resource_from_access(
@@ -51,7 +51,7 @@ class AccessServiceAdmin:
             f"Удаление ресурса из доступа: access_id={access_id}, resource_id={resource_id}"
         )
 
-        access = await self.access_repository.find_by_id_with_resources(access_id)
+        access = await self._access_repository.find_by_id_with_resources(access_id)
         if access is None:
             raise ValueError(f"Доступ с ID {access_id} не найден")
 
@@ -67,7 +67,7 @@ class AccessServiceAdmin:
             )
 
         access.resources.remove(resource_to_remove)
-        await self.access_repository.flush()
+        await self._access_repository.flush()
 
         logger.debug(
             f"Ресурс удален из доступа: access_id={access_id}, resource_id={resource_id}"
@@ -77,7 +77,7 @@ class AccessServiceAdmin:
 
         logger.debug(f"Удаление доступа: id={access_id}")
 
-        access_with_groups = await self.access_repository.find_by_id_with_groups(access_id)
+        access_with_groups = await self._access_repository.find_by_id_with_groups(access_id)
         if access_with_groups is None:
             raise ValueError(f"Доступ с ID {access_id} не найден")
 
@@ -89,7 +89,7 @@ class AccessServiceAdmin:
             )
 
         access_name = access_with_groups.name
-        await self.access_repository.delete(access_with_groups)
+        await self._access_repository.delete(access_with_groups)
 
         logger.debug(f"Доступ удален: id={access_id}, name={access_name}")
 

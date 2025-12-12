@@ -1,6 +1,6 @@
 import logging
 import redis.asyncio as redis
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
 from access_control_service.dependencies import (
     get_redis_connection,
@@ -22,8 +22,6 @@ from access_control_service.services.protocols import (
     GroupServiceProtocol,
     ConflictServiceAdminProtocol,
 )
-
-logger = logging.getLogger(__name__)
 from access_control_service.models.models import (
     CreateResourceRequest,
     CreateResourceResponse,
@@ -38,6 +36,9 @@ from access_control_service.models.models import (
     AddResourceToAccessRequest,
     Resource as ResourceModel,
 )
+
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
 
@@ -76,11 +77,11 @@ async def add_resource_to_access(
     await access_service_admin.add_resource_to_access(
         access_id, resource_data.resource_id
     )
-    
+
     await invalidate_access_groups_cache(redis_conn, access_id)
-    
+
     access = await access_service.get_access(access_id)
-    
+
     resources_out = [
         ResourceModel(
             id=res.id,
@@ -90,7 +91,7 @@ async def add_resource_to_access(
         )
         for res in access.resources
     ]
-    
+
     return AccessOut(
         id=access.id,
         name=access.name,
@@ -108,7 +109,7 @@ async def remove_resource_from_access(
     await access_service_admin.remove_resource_from_access(
         access_id, resource_id
     )
-    
+
     await invalidate_access_groups_cache(redis_conn, access_id)
 
 
@@ -119,7 +120,7 @@ async def delete_access(
     access_service_admin: AccessServiceAdminProtocol = Depends(get_access_service_admin),
 ):
     await access_service_admin.delete_access(access_id)
-    
+
     await invalidate_access_groups_cache(redis_conn, access_id)
 
 
@@ -139,7 +140,7 @@ async def add_access_to_group(
     group_service: GroupServiceProtocol = Depends(get_group_service),
 ):
     await group_service.add_access_to_group(group_id, access_id)
-    
+
     await invalidate_group_accesses_cache(redis_conn, group_id)
     await invalidate_access_groups_cache(redis_conn, access_id)
 
@@ -152,7 +153,7 @@ async def remove_access_from_group(
     group_service: GroupServiceProtocol = Depends(get_group_service),
 ):
     await group_service.remove_access_from_group(group_id, access_id)
-    
+
     await invalidate_group_accesses_cache(redis_conn, group_id)
     await invalidate_access_groups_cache(redis_conn, access_id)
 
@@ -164,7 +165,7 @@ async def delete_group(
     group_service: GroupServiceProtocol = Depends(get_group_service),
 ):
     await group_service.delete_group(group_id)
-    
+
     await invalidate_group_accesses_cache(redis_conn, group_id)
 
 
@@ -175,13 +176,13 @@ async def create_conflict(
     conflict_service_admin: ConflictServiceAdminProtocol = Depends(get_conflict_service_admin),
 ):
     """Создание конфликта между группами.
-    
+
     Автоматически создает симметричную пару (group1,group2) и (group2,group1)
     """
     result = await conflict_service_admin.create_conflict(conflict_in)
-    
+
     await invalidate_conflicts_matrix_cache(redis_conn)
-    
+
     return result
 
 
@@ -192,10 +193,9 @@ async def delete_conflict(
     conflict_service_admin: ConflictServiceAdminProtocol = Depends(get_conflict_service_admin),
 ):
     """Удаление конфликта между группами.
-    
+
     Удаляет обе симметричные пары: (group_id1, group_id2) и (group_id2, group_id1)
     """
     await conflict_service_admin.delete_conflict(conflict_in.group_id1, conflict_in.group_id2)
-    
-    await invalidate_conflicts_matrix_cache(redis_conn)
 
+    await invalidate_conflicts_matrix_cache(redis_conn)

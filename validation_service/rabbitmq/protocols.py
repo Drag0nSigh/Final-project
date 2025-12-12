@@ -13,4 +13,3 @@ class ResultPublisherProtocol(Protocol):
 
     async def publish_result(self, result: ValidationResult) -> None:
         ...
-

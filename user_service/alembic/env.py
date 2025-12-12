@@ -22,14 +22,18 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
+
 def get_url():
     settings = get_settings()
     return settings.build_database_url()
 
+
 def get_metadata():
     return Base.registry.metadata if hasattr(Base, 'registry') else Base.metadata
 
+
 target_metadata = get_metadata()
+
 
 def run_migrations_offline() -> None:
     url = get_url()
@@ -59,7 +63,7 @@ def do_run_migrations(connection: Connection) -> None:
 async def run_migrations_online() -> None:
     configuration = config.get_section(config.config_ini_section)
     configuration["sqlalchemy.url"] = get_url()
-    
+
     connectable = create_async_engine(
         get_url(),
         poolclass=pool.NullPool,
@@ -75,4 +79,3 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     asyncio.run(run_migrations_online())
-

@@ -32,4 +32,3 @@ async def get_resource(
     response = await access_control_client.get_resource(resource_id=resource_id)
 
     return response
-

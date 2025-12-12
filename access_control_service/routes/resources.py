@@ -27,4 +27,3 @@ async def get_all_resources(
 ):
     resources = await resource_service.get_all_resources()
     return [ResourceOut.model_validate(resource) for resource in resources]
-

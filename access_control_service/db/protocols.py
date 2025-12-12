@@ -30,4 +30,3 @@ class RedisClientProtocol(Protocol):
 
     async def close(self) -> None:
         ...
-

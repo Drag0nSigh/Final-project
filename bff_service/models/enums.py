@@ -11,4 +11,3 @@ class PermissionStatus(str, Enum):
     PENDING = "pending"
     REVOKED = "revoked"
     REJECTED = "rejected"
-

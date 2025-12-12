@@ -79,4 +79,3 @@ async def readiness_check():
         )
 
     return response
-

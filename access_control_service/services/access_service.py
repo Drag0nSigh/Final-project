@@ -1,5 +1,7 @@
 import logging
 
+from fastapi import HTTPException, status
+
 from access_control_service.db.access import Access
 from access_control_service.models.models import (
     CreateAccessRequest,
@@ -24,8 +26,8 @@ class AccessService:
         access_repository: AccessRepositoryProtocol,
         resource_repository: ResourceRepositoryProtocol,
     ):
-        self.access_repository = access_repository
-        self.resource_repository = resource_repository
+        self._access_repository = access_repository
+        self._resource_repository = resource_repository
 
     async def create_access(
         self, access_data: CreateAccessRequest
@@ -36,7 +38,7 @@ class AccessService:
         )
 
         if access_data.resource_ids:
-            existing_ids = await self.resource_repository.find_ids_by_ids(
+            existing_ids = await self._resource_repository.find_ids_by_ids(
                 access_data.resource_ids
             )
 
@@ -47,26 +49,26 @@ class AccessService:
                 )
 
         access = Access(name=access_data.name)
-        access = await self.access_repository.save(access)
+        access = await self._access_repository.save(access)
         access_id = access.id
 
         if access_data.resource_ids:
-            resources = await self.resource_repository.find_by_ids(
+            resources = await self._resource_repository.find_by_ids(
                 access_data.resource_ids
             )
             
-            access_with_resources = await self.access_repository.find_by_id_with_resources(
+            access_with_resources = await self._access_repository.find_by_id_with_resources(
                 access_id
             )
             if access_with_resources is None:
                 raise ValueError(f"Доступ с ID {access_id} не найден после создания")
             
             access_with_resources.resources.extend(resources)
-            await self.access_repository.flush()
+            await self._access_repository.flush()
             
             access = access_with_resources
         else:
-            access = await self.access_repository.find_by_id_with_resources(access_id)
+            access = await self._access_repository.find_by_id_with_resources(access_id)
             if access is None:
                 raise ValueError(f"Доступ с ID {access_id} не найден после создания")
 
@@ -94,10 +96,13 @@ class AccessService:
         
         logger.debug(f"Получение доступа: id={access_id}")
 
-        access = await self.access_repository.find_by_id_with_resources(access_id)
+        access = await self._access_repository.find_by_id_with_resources(access_id)
 
         if access is None:
-            raise ValueError(f"Доступ с ID {access_id} не найден")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Доступ с ID {access_id} не найден"
+            )
 
         logger.debug(
             f"Доступ найден: id={access.id}, name={access.name}, resources_count={len(access.resources)}"
@@ -108,7 +113,7 @@ class AccessService:
 
         logger.debug("Получение всех доступов")
 
-        accesses = await self.access_repository.find_all_with_resources()
+        accesses = await self._access_repository.find_all_with_resources()
 
         logger.debug(f"Найдено доступов: {len(accesses)}")
         return accesses
@@ -119,9 +124,12 @@ class AccessService:
 
         logger.debug(f"Получение групп для доступа: access_id={access_id}")
 
-        access_with_groups = await self.access_repository.find_by_id_with_groups(access_id)
+        access_with_groups = await self._access_repository.find_by_id_with_groups(access_id)
         if access_with_groups is None:
-            raise ValueError(f"Доступ с ID {access_id} не найден")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Доступ с ID {access_id} не найден"
+            )
 
         groups = [
             GroupModel(

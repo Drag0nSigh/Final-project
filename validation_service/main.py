@@ -40,12 +40,12 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    
+
     logger.debug("Запуск Validation Service...")
-    
+
     try:
         logger.debug(f"Настройки загружены, уровень логирования: {settings.LOG_LEVEL}")
-        
+
         try:
             logger.debug("Инициализация Redis кэша...")
             cache = RedisCache(
@@ -58,7 +58,7 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.exception(f"Ошибка инициализации Redis кэша: {e}")
             raise
-        
+
         try:
             logger.debug("Инициализация HTTP клиентов...")
             user_client: UserServiceClientProtocol = UserServiceClient(
@@ -77,7 +77,7 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.exception(f"Ошибка инициализации HTTP клиентов: {e}")
             raise
-        
+
         try:
             logger.debug("Инициализация ValidationService...")
             validation_service: ValidationServiceProtocol = ValidationService(
@@ -89,7 +89,7 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.exception(f"Ошибка инициализации ValidationService: {e}")
             raise
-        
+
         try:
             logger.debug("Инициализация ResultPublisher...")
             publisher: ResultPublisherProtocol = ResultPublisher(
@@ -102,7 +102,7 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.exception(f"Ошибка инициализации ResultPublisher: {e}")
             raise
-        
+
         try:
             logger.debug("Инициализация ValidationConsumer...")
             consumer = ValidationConsumer(
@@ -117,7 +117,7 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.exception(f"Ошибка инициализации ValidationConsumer: {e}")
             raise
-        
+
         try:
             logger.debug("Запуск ValidationConsumer в фоновом режиме...")
             consumer_task = asyncio.create_task(consumer.start_consuming())
@@ -126,22 +126,22 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.exception(f"Ошибка запуска ValidationConsumer: {e}")
             raise
-        
+
     except Exception as e:
         logger.exception(f"Критическая ошибка при запуске Validation Service: {e}")
         raise
-    
+
     yield
-    
+
     logger.debug("Остановка Validation Service...")
-    
+
     consumer_task = getattr(app.state, "consumer_task", None)
     consumer = getattr(app.state, "consumer", None)
     publisher = getattr(app.state, "publisher", None)
     user_client = getattr(app.state, "user_client", None)
     access_control_client = getattr(app.state, "access_control_client", None)
     cache = getattr(app.state, "cache", None)
-    
+
     if consumer_task and not consumer_task.done():
         try:
             logger.debug("Остановка ValidationConsumer...")
@@ -157,7 +157,7 @@ async def lifespan(app: FastAPI):
             logger.debug("ValidationConsumer остановлен")
         except Exception as e:
             logger.exception(f"Ошибка при остановке ValidationConsumer: {e}")
-    
+
     if publisher:
         try:
             logger.debug("Закрытие ResultPublisher...")
@@ -165,23 +165,23 @@ async def lifespan(app: FastAPI):
             logger.debug("ResultPublisher закрыт")
         except Exception as e:
             logger.exception(f"Ошибка при закрытии ResultPublisher: {e}")
-    
+
     if user_client:
         try:
             logger.debug("Закрытие UserServiceClient...")
             await user_client.close()
         except Exception as e:
             logger.exception(f"Ошибка при закрытии UserServiceClient: {e}")
-    
+
     if access_control_client:
         try:
             logger.debug("Закрытие AccessControlClient...")
             await access_control_client.close()
         except Exception as e:
             logger.exception(f"Ошибка при закрытии AccessControlClient: {e}")
-    
+
     logger.debug("HTTP клиенты закрыты")
-    
+
     if cache:
         try:
             logger.debug("Закрытие Redis кэша...")
@@ -189,7 +189,7 @@ async def lifespan(app: FastAPI):
             logger.debug("Redis кэш закрыт")
         except Exception as e:
             logger.exception(f"Ошибка при закрытии Redis кэша: {e}")
-    
+
     logger.debug("Validation Service остановлен")
 
 
@@ -218,21 +218,21 @@ async def readiness_check(request: Request):
         "user_service": False,
         "access_control_service": False
     }
-    
+
     app = request.app
     cache = getattr(app.state, "cache", None)
     consumer = getattr(app.state, "consumer", None)
     publisher = getattr(app.state, "publisher", None)
     user_client = getattr(app.state, "user_client", None)
     access_control_client = getattr(app.state, "access_control_client", None)
-    
+
     try:
         if cache and cache.client:
             await cache.client.ping()
             checks["redis"] = True
     except Exception as e:
         logger.warning(f"Redis недоступен: {e}")
-    
+
     try:
         if consumer and consumer.connection and not consumer.connection.is_closed:
             checks["rabbitmq"] = True
@@ -240,7 +240,7 @@ async def readiness_check(request: Request):
             checks["rabbitmq"] = True
     except Exception as e:
         logger.warning(f"RabbitMQ недоступен: {e}")
-    
+
     try:
         if user_client:
             async with httpx.AsyncClient(timeout=5.0) as client:
@@ -249,7 +249,7 @@ async def readiness_check(request: Request):
                     checks["user_service"] = True
     except Exception as e:
         logger.warning(f"User Service недоступен: {e}")
-    
+
     try:
         if access_control_client:
             async with httpx.AsyncClient(timeout=5.0) as client:
@@ -258,7 +258,7 @@ async def readiness_check(request: Request):
                     checks["access_control_service"] = True
     except Exception as e:
         logger.warning(f"Access Control Service недоступен: {e}")
-    
+
     if all(checks.values()):
         return JSONResponse(
             status_code=status.HTTP_200_OK,
@@ -277,4 +277,3 @@ async def readiness_check(request: Request):
                 "checks": checks
             }
         )
-

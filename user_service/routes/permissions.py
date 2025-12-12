@@ -11,10 +11,8 @@ from user_service.models.models import (
     GetActiveGroupsResponse,
 )
 from user_service.dependencies import (
-    get_db_session,
     get_settings_dependency,
-    get_rabbitmq_manager,
-    get_redis_connection,
+    get_rabbitmq_manager_dependency,
     get_permission_service,
 )
 from user_service.config.settings import Settings
@@ -31,12 +29,12 @@ async def request_access(
     request: RequestAccessRequest,
     service: PermissionServiceProtocol = Depends(get_permission_service),
     settings: Settings = Depends(get_settings_dependency),
-    rabbitmq: RabbitMQManagerProtocol = Depends(get_rabbitmq_manager),
+    rabbitmq: RabbitMQManagerProtocol = Depends(get_rabbitmq_manager_dependency),
 ):
     logger.debug(
         f"Получен запрос на создание заявки: user={request.user_id} permission_type={request.permission_type} item_id={request.item_id}"
     )
-    
+
     try:
         result = await service.create_request(request)
     except ValueError as exc:
@@ -52,7 +50,7 @@ async def request_access(
             item_id=request.item_id,
             request_id=result.request_id,
         )
-    except Exception as exc:
+    except Exception:
         # Если публикация не удалась, логируем ошибку, но не прерываем обработку:
         # заявка уже создана в БД, её можно будет обработать позже (например, через
         # повторную публикацию или ручной запуск валидации).
@@ -107,4 +105,3 @@ async def get_current_active_groups(
     logger.debug(f"Получение активных групп пользователя user={user_id}")
 
     return await service.get_active_groups(user_id)
-

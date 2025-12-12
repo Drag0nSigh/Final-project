@@ -21,8 +21,8 @@ class ConflictServiceAdmin:
         group_repository: GroupRepositoryProtocol,
         conflict_repository: ConflictRepositoryProtocol,
     ):
-        self.group_repository = group_repository
-        self.conflict_repository = conflict_repository
+        self._group_repository = group_repository
+        self._conflict_repository = conflict_repository
 
     async def create_conflict(
         self, conflict_data: CreateConflictRequest
@@ -38,7 +38,7 @@ class ConflictServiceAdmin:
             f"Создание конфликта: group_id1={group_id1}, group_id2={group_id2}"
         )
 
-        existing_ids = await self.group_repository.find_ids_by_ids(
+        existing_ids = await self._group_repository.find_ids_by_ids(
             [group_id1, group_id2]
         )
 
@@ -49,11 +49,11 @@ class ConflictServiceAdmin:
         created_conflicts = []
 
         for g1, g2 in [(group_id1, group_id2), (group_id2, group_id1)]:
-            existing_conflict = await self.conflict_repository.find_by_group_ids(g1, g2)
+            existing_conflict = await self._conflict_repository.find_by_group_ids(g1, g2)
 
             if existing_conflict is None:
                 conflict = Conflict(group_id1=g1, group_id2=g2)
-                await self.conflict_repository.save(conflict)
+                await self._conflict_repository.save(conflict)
                 created_conflicts.append(
                     CreateConflictResponse(group_id1=g1, group_id2=g2)
                 )
@@ -88,18 +88,18 @@ class ConflictServiceAdmin:
         deleted_count = 0
 
         for g1, g2 in [(group_id1, group_id2), (group_id2, group_id1)]:
-            conflict = await self.conflict_repository.find_by_group_ids(g1, g2)
+            conflict = await self._conflict_repository.find_by_group_ids(g1, g2)
             logger.debug(f"conflict: {conflict.group_id1}, {conflict.group_id2}" if conflict else "conflict: None")
 
             if conflict is not None:
-                await self.conflict_repository.delete(conflict)
+                await self._conflict_repository.delete(conflict)
                 deleted_count += 1
                 logger.debug(f"Удален конфликт: group_id1={g1}, group_id2={g2}")
             else:
                 logger.debug(
                     f"Конфликт не найден: group_id1={g1}, group_id2={g2}"
                 )
-        found_conflict = await self.conflict_repository.find_by_group_ids(group_id1, group_id2) # DEBUG
+        found_conflict = await self._conflict_repository.find_by_group_ids(group_id1, group_id2) # DEBUG
         logger.debug(f"{found_conflict}" if found_conflict else "found_conflict: None") # DEBUG
         if deleted_count == 0:
 

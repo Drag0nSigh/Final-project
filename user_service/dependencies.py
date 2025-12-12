@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from functools import lru_cache
-from typing import AsyncGenerator, cast, Any
+from typing import AsyncGenerator, cast
 
 import redis.asyncio as redis
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -42,9 +42,24 @@ def get_redis_client() -> RedisClientProtocol:
     return RedisClient()
 
 
-@lru_cache(maxsize=1)
-def get_rabbitmq_manager() -> RabbitMQManagerProtocol:
-    return RabbitMQManager()
+_rabbitmq_manager: RabbitMQManagerProtocol | None = None
+
+
+def get_rabbitmq_manager(
+    settings: Settings | None = None,
+) -> RabbitMQManagerProtocol:
+    global _rabbitmq_manager
+    if _rabbitmq_manager is None:
+        if settings is None:
+            settings = get_settings_dependency()
+        _rabbitmq_manager = RabbitMQManager(settings=settings)
+    return _rabbitmq_manager
+
+
+def get_rabbitmq_manager_dependency(
+    settings: Settings = Depends(get_settings_dependency),
+) -> RabbitMQManagerProtocol:
+    return get_rabbitmq_manager(settings=settings)
 
 
 _db_connect_lock: asyncio.Lock | None = None
@@ -59,12 +74,12 @@ def _get_db_connect_lock() -> asyncio.Lock:
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     db = cast(Database, get_database())
-    
+
     if db.AsyncSessionLocal is None:
         async with _get_db_connect_lock():
             if db.AsyncSessionLocal is None:
                 await db.connect()
-    
+
     async with db.AsyncSessionLocal() as session:
         try:
             yield session
@@ -105,4 +120,3 @@ def create_permission_service(
 ) -> PermissionServiceProtocol:
     permission_repository = UserPermissionRepository(session=session)
     return PermissionService(permission_repository=permission_repository, redis_conn=redis_conn)
-

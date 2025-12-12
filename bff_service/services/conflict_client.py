@@ -13,9 +13,9 @@ class ConflictClient(BaseHTTPClient[GetConflictsResponse]):
         super().__init__(base_url, "conflicts", http_client)
 
     async def get_all(self) -> GetConflictsResponse:
-        url = f"/{self.endpoint_prefix}"
+        url = f"/{self._endpoint_prefix}"
 
-        response = await self.client.get(url)
+        response = await self._client.get(url)
         response.raise_for_status()
         result = response.json()
         return GetConflictsResponse.model_validate(result)

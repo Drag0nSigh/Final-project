@@ -25,9 +25,9 @@ class GroupService:
         access_repository: AccessRepositoryProtocol,
         conflict_repository: ConflictRepositoryProtocol,
     ):
-        self.group_repository = group_repository
-        self.access_repository = access_repository
-        self.conflict_repository = conflict_repository
+        self._group_repository = group_repository
+        self._access_repository = access_repository
+        self._conflict_repository = conflict_repository
 
     async def create_group(
         self, group_data: CreateGroupRequest
@@ -37,12 +37,12 @@ class GroupService:
             f"Создание группы: name={group_data.name}, access_ids={group_data.access_ids}"
         )
 
-        existing_group = await self.group_repository.find_by_name(group_data.name)
+        existing_group = await self._group_repository.find_by_name(group_data.name)
         if existing_group is not None:
             raise ValueError(f"Группа с именем '{group_data.name}' уже существует")
 
         if group_data.access_ids:
-            existing_ids = await self.access_repository.find_ids_by_ids(
+            existing_ids = await self._access_repository.find_ids_by_ids(
                 group_data.access_ids
             )
 
@@ -53,24 +53,24 @@ class GroupService:
                 )
 
         group = Group(name=group_data.name)
-        group = await self.group_repository.save(group)
+        group = await self._group_repository.save(group)
         group_id = group.id
 
         if group_data.access_ids:
-            accesses = await self.access_repository.find_by_ids(
+            accesses = await self._access_repository.find_by_ids(
                 group_data.access_ids
             )
             
-            group_with_accesses = await self.group_repository.find_by_id_with_accesses(group_id)
+            group_with_accesses = await self._group_repository.find_by_id_with_accesses(group_id)
             if group_with_accesses is None:
                 raise ValueError(f"Группа с ID {group_id} не найдена после создания")
             
             group_with_accesses.accesses.extend(accesses)
-            await self.group_repository.flush()
+            await self._group_repository.flush()
             
             group = group_with_accesses
         else:
-            group = await self.group_repository.find_by_id_with_accesses(group_id)
+            group = await self._group_repository.find_by_id_with_accesses(group_id)
             if group is None:
                 raise ValueError(f"Группа с ID {group_id} не найдена после создания")
 
@@ -97,7 +97,7 @@ class GroupService:
 
         logger.debug(f"Получение группы: id={group_id}")
 
-        group = await self.group_repository.find_by_id_with_accesses_and_resources(group_id)
+        group = await self._group_repository.find_by_id_with_accesses_and_resources(group_id)
 
         if group is None:
             raise ValueError(f"Группа с ID {group_id} не найдена")
@@ -111,7 +111,7 @@ class GroupService:
 
         logger.debug("Получение всех групп")
 
-        groups = await self.group_repository.find_all_with_accesses_and_resources()
+        groups = await self._group_repository.find_all_with_accesses_and_resources()
 
         logger.debug(f"Найдено групп: {len(groups)}")
         return groups
@@ -159,7 +159,7 @@ class GroupService:
         if group is None:
             raise ValueError(f"Группа с ID {group_id} не найдена")
 
-        access = await self.access_repository.find_by_id(access_id)
+        access = await self._access_repository.find_by_id(access_id)
         if access is None:
             raise ValueError(f"Доступ с ID {access_id} не найден")
 
@@ -195,7 +195,7 @@ class GroupService:
 
     async def delete_group(self, group_id: int) -> None:
 
-        group = await self.group_repository.find_by_id_with_conflicts(group_id)
+        group = await self._group_repository.find_by_id_with_conflicts(group_id)
         if group is None:
             raise ValueError(f"Группа с ID {group_id} не найдена")
 
@@ -205,6 +205,6 @@ class GroupService:
                 f"Группа с ID {group_id} не может быть удалена, так как имеет конфликты"
             )
 
-        await self.group_repository.delete(group)
+        await self._group_repository.delete(group)
 
 

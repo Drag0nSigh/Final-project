@@ -72,4 +72,3 @@ class UserPermissionRepositoryProtocol(Protocol):
 
     async def delete(self, permission: UserPermission) -> None:
         ...
-

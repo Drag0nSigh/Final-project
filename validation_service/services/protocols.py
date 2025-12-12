@@ -67,4 +67,3 @@ class ValidationServiceProtocol(Protocol):
 
     async def validate(self, request: ValidationRequest) -> ValidationResult:
         ...
-

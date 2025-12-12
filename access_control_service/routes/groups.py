@@ -46,11 +46,10 @@ async def get_accesses_by_group(
             "group_id": group_id,
             "accesses": cached_accesses
         })
-    
+
     result = await group_service.get_group_accesses(group_id)
-    
+
     accesses_dict = [access.model_dump() for access in result.accesses]
     await set_group_accesses_cache(redis_conn, group_id, accesses_dict)
-    
-    return result
 
+    return result

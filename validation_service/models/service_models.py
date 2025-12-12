@@ -45,4 +45,3 @@ class GetAccessGroupsResponse(BaseModel):
 
 class GetUserGroupsResponse(BaseModel):
     groups: list[Group] = Field(default_factory=list, description="Группы пользователя")
-

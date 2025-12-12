@@ -108,4 +108,3 @@ class ConflictRepositoryProtocol(Protocol):
 
     async def flush(self) -> None:
         ...
-

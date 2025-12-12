@@ -11,11 +11,11 @@ logger = logging.getLogger(__name__)
 class ConflictService:
 
     def __init__(self, conflict_repository: ConflictRepositoryProtocol):
-        self.conflict_repository = conflict_repository
+        self._conflict_repository = conflict_repository
 
     async def get_all_conflicts(self) -> list[ConflictModel]:
 
-        conflicts = await self.conflict_repository.find_all()
+        conflicts = await self._conflict_repository.find_all()
 
         conflicts_out = [
             ConflictModel(group_id1=c.group_id1, group_id2=c.group_id2)

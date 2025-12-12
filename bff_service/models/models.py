@@ -75,4 +75,3 @@ class Conflict(BaseModel):
 
 class GetConflictsResponse(BaseModel):
     conflicts: list[Conflict] = Field(default_factory=list, description="Список конфликтующих групп")
-

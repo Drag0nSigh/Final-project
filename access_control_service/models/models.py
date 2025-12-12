@@ -97,4 +97,3 @@ class GetConflictsResponse(BaseModel):
 
 class AddResourceToAccessRequest(BaseModel):
     resource_id: int = Field(gt=0, description="ID ресурса")
-

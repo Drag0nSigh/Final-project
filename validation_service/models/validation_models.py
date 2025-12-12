@@ -4,14 +4,14 @@ from validation_service.models.enums import PermissionType
 
 
 class ValidationRequest(BaseModel):
-    
+
     user_id: int = Field(gt=0, description="ID пользователя")
     permission_type: PermissionType = Field(
         description="Тип права: 'access' - доступ, 'group' - группа"
     )
     item_id: int = Field(gt=0, description="ID доступа или группы")
     request_id: str = Field(description="UUID заявки для отслеживания")
-    
+
     model_config = ConfigDict(
         extra="forbid",
         json_schema_extra={
@@ -24,8 +24,9 @@ class ValidationRequest(BaseModel):
         }
     )
 
+
 class ValidationResult(BaseModel):
-    
+
     request_id: str = Field(description="UUID заявки")
     approved: bool = Field(description="Одобрено или отклонено")
     reason: str | None = Field(
@@ -37,7 +38,7 @@ class ValidationResult(BaseModel):
         description="Тип права: 'access' - доступ, 'group' - группа"
     )
     item_id: int = Field(description="ID доступа или группы")
-    
+
     model_config = ConfigDict(
         extra="forbid",
         json_schema_extra={
@@ -51,4 +52,3 @@ class ValidationResult(BaseModel):
             }
         }
     )
-

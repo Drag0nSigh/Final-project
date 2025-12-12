@@ -6,7 +6,7 @@ import logging
 import aio_pika
 from aio_pika.abc import AbstractConnection, AbstractChannel, AbstractQueue
 
-from user_service.config.settings import get_settings
+from user_service.config.settings import Settings
 from user_service.models.enums import PermissionType
 
 logger = logging.getLogger(__name__)
@@ -14,9 +14,9 @@ logger = logging.getLogger(__name__)
 
 class RabbitMQManager:
 
-    def __init__(self) -> None:
+    def __init__(self, settings: Settings) -> None:
 
-        self._settings = get_settings()
+        self._settings = settings
         self._connection: AbstractConnection | None = None
         self._channel: AbstractChannel | None = None
         self._validation_queue: AbstractQueue | None = None
@@ -74,7 +74,7 @@ class RabbitMQManager:
 
             logger.debug("RabbitMQ менеджер успешно подключён, все очереди объявлены")
 
-        except Exception as exc:
+        except Exception:
             logger.exception("Ошибка при подключении к RabbitMQ или объявлении очередей")
             await self._cleanup()
             raise
@@ -89,13 +89,13 @@ class RabbitMQManager:
         try:
             if self._channel and not self._channel.is_closed:
                 await self._channel.close()
-        except Exception as exc:
+        except Exception:
             logger.exception("Ошибка при закрытии канала RabbitMQ")
 
         try:
             if self._connection and not self._connection.is_closed:
                 await self._connection.close()
-        except Exception as exc:
+        except Exception:
             logger.exception("Ошибка при закрытии соединения RabbitMQ")
 
         self._channel = None
@@ -139,11 +139,8 @@ class RabbitMQManager:
                 f"permission_type={permission_type}, item_id={item_id}"
             )
 
-        except Exception as exc:
+        except Exception:
             logger.exception(
                 f"Ошибка при публикации запроса на валидацию: request_id={request_id}"
             )
             raise
-
-
-rabbitmq_manager = RabbitMQManager()

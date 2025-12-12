@@ -3,7 +3,7 @@ import sys
 from contextlib import asynccontextmanager
 
 import httpx
-from fastapi import FastAPI, HTTPException, Request, status
+from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
 from bff_service.routes import permissions, health, resources, accesses, groups, conflicts

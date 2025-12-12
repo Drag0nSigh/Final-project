@@ -3,7 +3,7 @@ from contextlib import AbstractAsyncContextManager
 
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 import redis.asyncio as redis
-from aio_pika.abc import AbstractConnection, AbstractChannel, AbstractQueue
+from aio_pika.abc import AbstractChannel, AbstractQueue
 
 from user_service.models.models import (
     RequestAccessRequest,

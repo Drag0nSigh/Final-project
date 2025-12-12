@@ -47,7 +47,8 @@ def get_settings_dependency() -> Settings:
 
 @lru_cache(maxsize=1)
 def get_database() -> DatabaseProtocol:
-    return Database()
+    settings = get_settings_dependency()
+    return Database(settings=settings)
 
 
 @lru_cache(maxsize=1)
@@ -55,24 +56,19 @@ def get_redis_client() -> RedisClientProtocol:
     return RedisClient()
 
 
-_db_connect_lock: asyncio.Lock | None = None
-
-
+@lru_cache(maxsize=1)
 def _get_db_connect_lock() -> asyncio.Lock:
-    global _db_connect_lock
-    if _db_connect_lock is None:
-        _db_connect_lock = asyncio.Lock()
-    return _db_connect_lock
+    return asyncio.Lock()
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     db = cast(Database, get_database())
-    
+
     if db.AsyncSessionLocal is None:
         async with _get_db_connect_lock():
             if db.AsyncSessionLocal is None:
                 await db.connect()
-    
+
     async with db.AsyncSessionLocal() as session:
         try:
             yield session
@@ -170,4 +166,3 @@ def get_conflict_service_admin(
         group_repository=group_repository,
         conflict_repository=conflict_repository,
     )
-

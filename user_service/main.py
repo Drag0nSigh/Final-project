@@ -1,5 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request, status
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 import asyncio
@@ -39,7 +38,7 @@ async def lifespan(app: FastAPI):
     db = get_database()
     redis_client = get_redis_client()
     rabbitmq_manager = get_rabbitmq_manager()
-    
+
     try:
         await db.connect()
         await db.init_db()
@@ -69,13 +68,13 @@ async def lifespan(app: FastAPI):
         db=db,
         redis_client=redis_client,
     )
-    
+
     result_consumer = ResultConsumer(
         service_factory=service_factory,
         rabbitmq_manager=rabbitmq_manager,
         db=db
     )
-    
+
     consumer_task: asyncio.Task | None = None
     try:
         consumer_task = asyncio.create_task(result_consumer.start_consuming())
@@ -131,7 +130,6 @@ app = FastAPI(
 )
 
 
-
 @app.exception_handler(ValueError)
 async def value_error_handler(request: Request, exc: ValueError):
     logger.warning(f"Ошибка валидации: {exc}")
@@ -153,4 +151,3 @@ async def generic_error_handler(request: Request, exc: Exception):
 app.include_router(health.router, prefix="/health", tags=["Health"])
 app.include_router(permissions.router, prefix="", tags=["Permissions"])
 app.include_router(admin.router, prefix="/admin", tags=["Admin"])
-

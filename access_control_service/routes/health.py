@@ -24,10 +24,10 @@ async def readiness_check():
         "db": False,
         "redis": False
     }
-    
+
     db = get_database()
     redis_client = get_redis_client()
-    
+
     try:
         if db.engine is None:
             logger.warning("БД не инициализирована")
@@ -40,7 +40,7 @@ async def readiness_check():
     except Exception as exc:
         logger.error(f"Ошибка проверки БД: {exc}")
         checks["db"] = False
-    
+
     try:
         redis_conn = redis_client.connection
         await redis_conn.ping()
@@ -48,7 +48,7 @@ async def readiness_check():
     except Exception as exc:
         logger.error(f"Ошибка проверки Redis: {exc}")
         checks["redis"] = False
-    
+
     if not all(checks.values()):
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -57,9 +57,8 @@ async def readiness_check():
                 "checks": checks
             }
         )
-    
+
     return {
         "status": "ready",
         "checks": checks
     }
-

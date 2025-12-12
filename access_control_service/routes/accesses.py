@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends
 
 from access_control_service.dependencies import get_access_service
 from access_control_service.models.models import (
@@ -17,7 +17,7 @@ async def get_access(
     access_service: AccessServiceProtocol = Depends(get_access_service),
 ):
     access = await access_service.get_access(access_id)
-    
+
     resources_out = [
         ResourceModel(
             id=res.id,
@@ -27,7 +27,7 @@ async def get_access(
         )
         for res in access.resources
     ]
-    
+
     return AccessOut(
         id=access.id,
         name=access.name,
@@ -65,4 +65,3 @@ async def get_groups_by_access(
     access_service: AccessServiceProtocol = Depends(get_access_service),
 ):
     return await access_service.get_groups_containing_access(access_id)
-
